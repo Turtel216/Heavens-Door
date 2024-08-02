@@ -1,4 +1,5 @@
 #include "heavens_door.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <termios.h>
 #include <unistd.h>
@@ -7,7 +8,8 @@ struct termios _termios;
 
 static void disable_RawMode(void)
 {
-	tcsetattr(STDIN_FILENO, TCSAFLUSH, &_termios);
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &_termios) == -1)
+		die("tcsetattr");
 }
 
 void enable_RowMode(void)
@@ -24,4 +26,10 @@ void enable_RowMode(void)
 	raw.c_cc[VTIME] = 1;
 
 	tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+}
+
+void die(const char *s)
+{
+	perror(s);
+	exit(EXIT_FAILURE);
 }
