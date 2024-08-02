@@ -3,7 +3,7 @@ project(Lock)
 
 # enable_testing()
 
-add_executable (rohan src/main.c)
+add_executable (rohan src/main.c src/heavens_door.c)
 
 # Tests
 # add_executable (test0 test/test-0.c src/virtual_machine.c src/garbage_collector.c)
