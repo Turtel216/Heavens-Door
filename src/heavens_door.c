@@ -99,8 +99,10 @@ void init_editor()
 static void draw_rows(struct abuf *ab)
 {
 	int y;
-	for (y = 0; y < config.screen_rows; y++) {
+	for (y = 0; y < config.screen_rows; ++y) {
 		buffer_append(ab, "~", 1);
+		buffer_append(ab, "\x1b[K", 3);
+
 		if (y < config.screen_rows - 1) {
 			buffer_append(ab, "\r\n", 2);
 		}
@@ -130,10 +132,15 @@ void die(const char *s)
 void refresh_screen()
 {
 	struct abuf ab = ABUF_INIT;
-	buffer_append(&ab, "\x1b[2J", 4);
+
+	buffer_append(&ab, "\x1b[?25l", 6);
 	buffer_append(&ab, "\x1b[H", 3);
+
 	draw_rows(&ab);
+
 	buffer_append(&ab, "\x1b[H", 3);
+	buffer_append(&ab, "\x1b[?25h", 6);
+
 	write(STDOUT_FILENO, ab.b, ab.len);
 	ab_free(&ab);
 }
