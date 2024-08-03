@@ -1,8 +1,10 @@
 #include "heavens_door.h"
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <termios.h>
 #include <unistd.h>
+#include "key_marcos.h"
 
 struct termios _termios;
 
@@ -26,6 +28,27 @@ void enable_RowMode(void)
 	raw.c_cc[VTIME] = 1;
 
 	tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+}
+
+static char read_keys()
+{
+	int nread;
+	char c;
+	while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
+		if (nread == -1 && errno != EAGAIN)
+			die("read");
+	}
+	return c;
+}
+
+void process_keys()
+{
+	char c = read_keys();
+	switch (c) {
+	case CTRL_KEY('q'):
+		exit(0);
+		break;
+	}
 }
 
 void die(const char *s)
