@@ -1,5 +1,4 @@
 #include "heavens_door.h"
-#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,6 +6,7 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include "key_marcos.h"
+#include "append_buffer.h"
 
 struct EditorsConfig {
 	int screen_rows;
@@ -96,11 +96,14 @@ void init_editor()
 		die("getWindowSize");
 }
 
-static void draw_rows()
+static void draw_rows(struct abuf *ab)
 {
 	int y;
 	for (y = 0; y < config.screen_rows; y++) {
-		write(STDOUT_FILENO, "~\r\n", 3);
+		buffer_append(ab, "~", 1);
+		if (y < config.screen_rows - 1) {
+			buffer_append(ab, "\r\n", 2);
+		}
 	}
 }
 
@@ -126,12 +129,11 @@ void die(const char *s)
 
 void refresh_screen()
 {
-	// Clear screen
-	write(STDOUT_FILENO, "\x1b[2J", 4);
-	// reposition curser
-	write(STDOUT_FILENO, "\x1b[H", 3);
-
-	draw_rows();
-
-	write(STDOUT_FILENO, "\x1b[H", 3);
+	struct abuf ab = ABUF_INIT;
+	buffer_append(&ab, "\x1b[2J", 4);
+	buffer_append(&ab, "\x1b[H", 3);
+	draw_rows(&ab);
+	buffer_append(&ab, "\x1b[H", 3);
+	write(STDOUT_FILENO, ab.b, ab.len);
+	ab_free(&ab);
 }
