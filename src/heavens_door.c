@@ -6,20 +6,24 @@
 #include <unistd.h>
 #include "key_marcos.h"
 
-struct termios _termios;
+struct EditorsConfig {
+	struct termios _termios;
+};
+
+struct EditorsConfig config;
 
 static void disable_RawMode(void)
 {
-	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &_termios) == -1)
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &config._termios) == -1)
 		die("tcsetattr");
 }
 
 void enable_RowMode(void)
 {
-	tcgetattr(STDIN_FILENO, &_termios);
+	tcgetattr(STDIN_FILENO, &config._termios);
 	atexit(disable_RawMode);
 
-	struct termios raw = _termios;
+	struct termios raw = config._termios;
 	raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
 	raw.c_oflag &= ~(OPOST);
 	raw.c_cflag |= (CS8);
@@ -53,6 +57,30 @@ void process_keys()
 
 void die(const char *s)
 {
+	// Clear screen and position curser
+	write(STDOUT_FILENO, "\x1b[2J", 4);
+	write(STDOUT_FILENO, "\x1b[H", 3);
+
 	perror(s);
 	exit(EXIT_FAILURE);
+}
+
+void draw_rows()
+{
+	int y;
+	for (y = 0; y < 24; y++) {
+		write(STDOUT_FILENO, "~\r\n", 3);
+	}
+}
+
+void refresh_screen()
+{
+	// Clear screen
+	write(STDOUT_FILENO, "\x1b[2J", 4);
+	// reposition curser
+	write(STDOUT_FILENO, "\x1b[H", 3);
+
+	draw_rows();
+
+	write(STDOUT_FILENO, "\x1b[H", 3);
 }

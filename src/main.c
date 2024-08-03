@@ -6,7 +6,10 @@ int main(void)
 {
 	enable_RowMode();
 
-	process_keys();
+	while (1) {
+		refresh_screen();
+		process_keys();
+	}
 
 	return EXIT_SUCCESS;
 }
