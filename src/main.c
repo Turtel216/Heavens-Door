@@ -5,6 +5,7 @@
 int main(void)
 {
 	enable_RowMode();
+	init_editor();
 
 	while (1) {
 		refresh_screen();

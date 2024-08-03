@@ -4,9 +4,12 @@
 #include <stdlib.h>
 #include <termios.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
 #include "key_marcos.h"
 
 struct EditorsConfig {
+	int screen_rows;
+	int screen_cols;
 	struct termios _termios;
 };
 
@@ -45,6 +48,32 @@ static char read_keys()
 	return c;
 }
 
+static int get_window_size(int *rows, int *cols)
+{
+	struct winsize ws;
+	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
+		return -1;
+	} else {
+		*cols = ws.ws_col;
+		*rows = ws.ws_row;
+		return 0;
+	}
+}
+
+void init_editor()
+{
+	if (get_window_size(&config.screen_rows, &config.screen_cols) == -1)
+		die("getWindowSize");
+}
+
+static void draw_rows()
+{
+	int y;
+	for (y = 0; y < config.screen_rows; y++) {
+		write(STDOUT_FILENO, "~\r\n", 3);
+	}
+}
+
 void process_keys()
 {
 	char c = read_keys();
@@ -63,14 +92,6 @@ void die(const char *s)
 
 	perror(s);
 	exit(EXIT_FAILURE);
-}
-
-void draw_rows()
-{
-	int y;
-	for (y = 0; y < 24; y++) {
-		write(STDOUT_FILENO, "~\r\n", 3);
-	}
 }
 
 void refresh_screen()
