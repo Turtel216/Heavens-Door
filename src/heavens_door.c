@@ -96,11 +96,36 @@ void init_editor()
 		die("getWindowSize");
 }
 
+#define HEAVENS_DOOR_VERSION "0.1"
+
 static void draw_rows(struct abuf *ab)
 {
 	int y;
 	for (y = 0; y < config.screen_rows; ++y) {
-		buffer_append(ab, "~", 1);
+		if (y == config.screen_rows / 3) {
+			char welcome[80];
+
+			int welcome_len = snprintf(
+				welcome, sizeof(welcome),
+				"Heaven's Door text editor -- version %s",
+				HEAVENS_DOOR_VERSION);
+
+			if (welcome_len > config.screen_cols)
+				welcome_len = config.screen_cols;
+
+			int padding = (config.screen_cols - welcome_len) / 2;
+			if (padding) {
+				buffer_append(ab, "~", 1);
+				padding--;
+			}
+			while (padding--)
+				buffer_append(ab, " ", 1);
+
+			buffer_append(ab, welcome, welcome_len);
+		} else {
+			buffer_append(ab, "~", 1);
+		}
+
 		buffer_append(ab, "\x1b[K", 3);
 
 		if (y < config.screen_rows - 1) {
