@@ -6,7 +6,6 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <string.h>
-#include "key_marcos.h"
 #include "append_buffer.h"
 
 struct EditorsConfig {
@@ -19,6 +18,8 @@ struct EditorsConfig {
 enum keys { ARROW_LEFT = 1000, ARROW_RIGHT, ARROW_UP, ARROW_DOWN };
 
 struct EditorsConfig config;
+
+#define CTRL_KEY(k) ((k) & 0x1f)
 
 static void disable_RawMode(void)
 {
@@ -168,16 +169,20 @@ static void move_cursor(int key)
 {
 	switch (key) {
 	case ARROW_LEFT:
-		config.cursor_x--;
+		if (config.cursor_x != 0)
+			config.cursor_x--;
 		break;
 	case ARROW_RIGHT:
-		config.cursor_x++;
+		if (config.cursor_x != config.screen_cols - 1)
+			config.cursor_x++;
 		break;
 	case ARROW_UP:
-		config.cursor_y--;
+		if (config.cursor_y != 0)
+			config.cursor_y--;
 		break;
 	case ARROW_DOWN:
-		config.cursor_y++;
+		if (config.cursor_y != config.screen_rows - 1)
+			config.cursor_y++;
 		break;
 	}
 }
