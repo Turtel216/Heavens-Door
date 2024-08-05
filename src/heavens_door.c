@@ -5,14 +5,18 @@
 #include <termios.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <string.h>
 #include "key_marcos.h"
 #include "append_buffer.h"
 
 struct EditorsConfig {
+	int cursor_x, cursor_y;
 	int screen_rows;
 	int screen_cols;
 	struct termios _termios;
 };
+
+enum keys { ARROW_LEFT = 1000, ARROW_RIGHT, ARROW_UP, ARROW_DOWN };
 
 struct EditorsConfig config;
 
@@ -46,7 +50,30 @@ static char read_keys()
 		if (nread == -1 && errno != EAGAIN)
 			die("read");
 	}
-	return c;
+
+	if (c == '\x1b') {
+		char seq[3];
+		if (read(STDIN_FILENO, &seq[0], 1) != 1)
+			return '\x1b';
+		if (read(STDIN_FILENO, &seq[1], 1) != 1)
+			return '\x1b';
+		if (seq[0] == '[') {
+			switch (seq[1]) {
+			case 'A':
+				return ARROW_UP;
+			case 'B':
+				return ARROW_DOWN;
+			case 'C':
+				return ARROW_RIGHT;
+			case 'D':
+				return ARROW_LEFT;
+			}
+		}
+
+		return '\x1b';
+	} else {
+		return c;
+	}
 }
 
 static int get_cursor_position(int *rows, int *cols)
@@ -92,8 +119,11 @@ static int get_window_size(int *rows, int *cols)
 
 void init_editor()
 {
+	config.cursor_x = 0;
+	config.cursor_y = 0;
+
 	if (get_window_size(&config.screen_rows, &config.screen_cols) == -1)
-		die("getWindowSize");
+		die("get window size");
 }
 
 #define HEAVENS_DOOR_VERSION "0.1"
@@ -134,15 +164,39 @@ static void draw_rows(struct abuf *ab)
 	}
 }
 
+static void move_cursor(int key)
+{
+	switch (key) {
+	case ARROW_LEFT:
+		config.cursor_x--;
+		break;
+	case ARROW_RIGHT:
+		config.cursor_x++;
+		break;
+	case ARROW_UP:
+		config.cursor_y--;
+		break;
+	case ARROW_DOWN:
+		config.cursor_y++;
+		break;
+	}
+}
+
 void process_keys()
 {
-	char c = read_keys();
+	int c = read_keys();
+
 	switch (c) {
 	case CTRL_KEY('q'):
-		// clear screen and exit
 		write(STDOUT_FILENO, "\x1b[2J", 4);
 		write(STDOUT_FILENO, "\x1b[H", 3);
 		exit(0);
+		break;
+	case ARROW_UP:
+	case ARROW_DOWN:
+	case ARROW_LEFT:
+	case ARROW_RIGHT:
+		move_cursor(c);
 		break;
 	}
 }
@@ -166,9 +220,13 @@ void refresh_screen()
 
 	draw_rows(&ab);
 
-	buffer_append(&ab, "\x1b[H", 3);
-	buffer_append(&ab, "\x1b[?25h", 6);
+	char buf[32];
+	snprintf(buf, sizeof(buf), "\x1b[%d;%dH", config.cursor_y + 1,
+		 config.cursor_x + 1);
+	buffer_append(&ab, buf, strlen(buf));
 
+	buffer_append(&ab, "\x1b[?25h", 6);
 	write(STDOUT_FILENO, ab.b, ab.len);
+
 	ab_free(&ab);
 }
