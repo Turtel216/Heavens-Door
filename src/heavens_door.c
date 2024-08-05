@@ -1,3 +1,7 @@
+#define _DEFAULT_SOURCE
+#define _BSD_SOURCE
+#define _GNU_SOURCE
+
 #include "heavens_door.h"
 #include <errno.h>
 #include <stdio.h>
@@ -8,10 +12,17 @@
 #include <string.h>
 #include "append_buffer.h"
 
+typedef struct text_row {
+	size_t size;
+	char *chars;
+} text_row;
+
 struct EditorsConfig {
 	int cursor_x, cursor_y;
 	int screen_rows;
 	int screen_cols;
+	size_t num_rows;
+	text_row *row;
 	struct termios _termios;
 };
 
@@ -167,9 +178,49 @@ void init_editor()
 {
 	config.cursor_x = 0;
 	config.cursor_y = 0;
+	config.num_rows = 0;
+	config.row = NULL;
 
 	if (get_window_size(&config.screen_rows, &config.screen_cols) == -1)
 		die("get window size");
+}
+
+static void append_row(char *s, size_t len)
+{
+	config.row =
+		realloc(config.row, sizeof(text_row) * (config.num_rows + 1));
+
+	int at = config.num_rows;
+
+	config.row[at].size = len;
+	config.row[at].chars = malloc(len + 1);
+
+	memcpy(config.row[at].chars, s, len);
+
+	config.row[at].chars[len] = '\0';
+	config.num_rows++;
+}
+
+void open_editor(char *filename)
+{
+	FILE *fp = fopen(filename, "r");
+
+	if (!fp)
+		die("fopen");
+
+	char *line = NULL;
+	size_t linecap = 0;
+	ssize_t linelen;
+
+	while ((linelen = getline(&line, &linecap, fp)) != -1) {
+		while (linelen > 0 &&
+		       (line[linelen - 1] == '\n' || line[linelen - 1] == '\r'))
+			linelen--;
+		append_row(line, linelen);
+	}
+
+	free(line);
+	fclose(fp);
 }
 
 #define HEAVENS_DOOR_VERSION "0.1"
@@ -178,32 +229,40 @@ static void draw_rows(struct abuf *ab)
 {
 	int y;
 	for (y = 0; y < config.screen_rows; ++y) {
-		if (y == config.screen_rows / 3) {
-			char welcome[80];
+		if (y >= config.num_rows) {
+			if (config.num_rows == 0 &&
+			    y == config.screen_rows / 3) {
+				char welcome[80];
+				int welcomelen = snprintf(
+					welcome, sizeof(welcome),
+					"Heaven's Door editor -- version %s",
+					HEAVENS_DOOR_VERSION);
 
-			int welcome_len = snprintf(
-				welcome, sizeof(welcome),
-				"Heaven's Door text editor -- version %s",
-				HEAVENS_DOOR_VERSION);
+				if (welcomelen > config.screen_cols)
+					welcomelen = config.screen_cols;
 
-			if (welcome_len > config.screen_cols)
-				welcome_len = config.screen_cols;
+				int padding =
+					(config.screen_cols - welcomelen) / 2;
+				if (padding) {
+					buffer_append(ab, "~", 1);
+					padding--;
+				}
 
-			int padding = (config.screen_cols - welcome_len) / 2;
-			if (padding) {
+				while (padding--)
+					buffer_append(ab, " ", 1);
+
+				buffer_append(ab, welcome, welcomelen);
+			} else {
 				buffer_append(ab, "~", 1);
-				padding--;
 			}
-			while (padding--)
-				buffer_append(ab, " ", 1);
-
-			buffer_append(ab, welcome, welcome_len);
 		} else {
-			buffer_append(ab, "~", 1);
+			int len = config.row[y].size;
+			if (len > config.screen_cols)
+				len = config.screen_cols;
+
+			buffer_append(ab, config.row[y].chars, len);
 		}
-
 		buffer_append(ab, "\x1b[K", 3);
-
 		if (y < config.screen_rows - 1) {
 			buffer_append(ab, "\r\n", 2);
 		}
