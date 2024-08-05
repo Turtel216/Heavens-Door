@@ -398,7 +398,8 @@ void refresh_screen()
 	draw_rows(&ab);
 
 	char buf[32];
-	snprintf(buf, sizeof(buf), "\x1b[%d;%dH", config.cursor_y + 1,
+	snprintf(buf, sizeof(buf), "\x1b[%d;%dH",
+		 (config.cursor_y - config.row_offset) + 1,
 		 config.cursor_x + 1);
 	buffer_append(&ab, buf, strlen(buf));
 
