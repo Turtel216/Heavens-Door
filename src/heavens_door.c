@@ -1,6 +1,11 @@
+// Necessery for file handling
 #define _DEFAULT_SOURCE
 #define _BSD_SOURCE
 #define _GNU_SOURCE
+// ###########################
+
+// Version number displayed on home screen
+#define HEAVENS_DOOR_VERSION "0.1"
 
 #include "heavens_door.h"
 #include <errno.h>
@@ -12,20 +17,26 @@
 #include <string.h>
 #include "append_buffer.h"
 
+// Holds meta data for each line of text
 typedef struct text_row {
-	size_t size;
-	char *chars;
+	size_t size; // size of each line
+	char *chars; // string of characters of each line
 } text_row;
 
+// Editor internal state
 struct EditorsConfig {
-	int cursor_x, cursor_y;
+	int cursor_x, cursor_y; // cursor position
 	int screen_rows;
 	int screen_cols;
 	size_t num_rows;
-	text_row *row;
-	struct termios _termios;
+	text_row *rows; // Array of rows
+	struct termios _termios; // structed uses for handling terminal
 };
 
+// Global editors state
+struct EditorsConfig config;
+
+// Key values
 enum keys {
 	ARROW_LEFT = 1000,
 	ARROW_RIGHT,
@@ -38,19 +49,21 @@ enum keys {
 	PAGE_DOWN
 };
 
-struct EditorsConfig config;
-
+// Marco for checking if ctrl key is pressed
 #define CTRL_KEY(k) ((k) & 0x1f)
 
+// Disables raw mode in terminal, exits program on fail
 static void disable_RawMode(void)
 {
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &config._termios) == -1)
 		die("tcsetattr");
 }
 
+// Allows editor to write in terminal
 void enable_RowMode(void)
 {
 	tcgetattr(STDIN_FILENO, &config._termios);
+	// Disable raw mode on program exit
 	atexit(disable_RawMode);
 
 	struct termios raw = config._termios;
@@ -64,6 +77,7 @@ void enable_RowMode(void)
 	tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
 
+// Reads keyboard input
 static int read_keys()
 {
 	int nread;
@@ -133,6 +147,7 @@ static int read_keys()
 	}
 }
 
+// Get current position of cursor on the screen
 static int get_cursor_position(int *rows, int *cols)
 {
 	char buf[32];
@@ -158,6 +173,7 @@ static int get_cursor_position(int *rows, int *cols)
 	return 0;
 }
 
+// Get the users window size
 static int get_window_size(int *rows, int *cols)
 {
 	struct winsize ws;
@@ -174,33 +190,37 @@ static int get_window_size(int *rows, int *cols)
 	}
 }
 
+// Initializes editor state
 void init_editor()
 {
 	config.cursor_x = 0;
 	config.cursor_y = 0;
 	config.num_rows = 0;
-	config.row = NULL;
+	config.rows = NULL;
 
+	// Set rows and collums according to screen size, exit on failure
 	if (get_window_size(&config.screen_rows, &config.screen_cols) == -1)
 		die("get window size");
 }
 
+// Adds a row to output string
 static void append_row(char *s, size_t len)
 {
-	config.row =
-		realloc(config.row, sizeof(text_row) * (config.num_rows + 1));
+	config.rows =
+		realloc(config.rows, sizeof(text_row) * (config.num_rows + 1));
 
 	int at = config.num_rows;
 
-	config.row[at].size = len;
-	config.row[at].chars = malloc(len + 1);
+	config.rows[at].size = len;
+	config.rows[at].chars = malloc(len + 1);
 
-	memcpy(config.row[at].chars, s, len);
+	memcpy(config.rows[at].chars, s, len);
 
-	config.row[at].chars[len] = '\0';
+	config.rows[at].chars[len] = '\0';
 	config.num_rows++;
 }
 
+// Opens up given file
 void open_editor(char *filename)
 {
 	FILE *fp = fopen(filename, "r");
@@ -210,8 +230,9 @@ void open_editor(char *filename)
 
 	char *line = NULL;
 	size_t linecap = 0;
-	ssize_t linelen;
+	size_t linelen;
 
+	// Read each line and append to rows
 	while ((linelen = getline(&line, &linecap, fp)) != -1) {
 		while (linelen > 0 &&
 		       (line[linelen - 1] == '\n' || line[linelen - 1] == '\r'))
@@ -223,13 +244,13 @@ void open_editor(char *filename)
 	fclose(fp);
 }
 
-#define HEAVENS_DOOR_VERSION "0.1"
-
+// Draws rows to screen
 static void draw_rows(struct abuf *ab)
 {
 	int y;
 	for (y = 0; y < config.screen_rows; ++y) {
 		if (y >= config.num_rows) {
+			// At the beginning draw welcome message
 			if (config.num_rows == 0 &&
 			    y == config.screen_rows / 3) {
 				char welcome[80];
@@ -241,6 +262,7 @@ static void draw_rows(struct abuf *ab)
 				if (welcomelen > config.screen_cols)
 					welcomelen = config.screen_cols;
 
+				// Add padding to welcome message
 				int padding =
 					(config.screen_cols - welcomelen) / 2;
 				if (padding) {
@@ -248,19 +270,22 @@ static void draw_rows(struct abuf *ab)
 					padding--;
 				}
 
+				// Add necessery white space for padding
 				while (padding--)
 					buffer_append(ab, " ", 1);
 
+				// Draw welcome message
 				buffer_append(ab, welcome, welcomelen);
 			} else {
+				// Add '~' to empty lines
 				buffer_append(ab, "~", 1);
 			}
-		} else {
-			int len = config.row[y].size;
+		} else { // Draw text
+			int len = config.rows[y].size;
 			if (len > config.screen_cols)
 				len = config.screen_cols;
 
-			buffer_append(ab, config.row[y].chars, len);
+			buffer_append(ab, config.rows[y].chars, len);
 		}
 		buffer_append(ab, "\x1b[K", 3);
 		if (y < config.screen_rows - 1) {
@@ -269,6 +294,7 @@ static void draw_rows(struct abuf *ab)
 	}
 }
 
+// Moves cursor on screen
 static void move_cursor(int key)
 {
 	switch (key) {
@@ -281,31 +307,36 @@ static void move_cursor(int key)
 			config.cursor_x++;
 		break;
 	case ARROW_UP:
-		if (config.cursor_y != 0)
+		if (config.cursor_y !=
+		    0) // prevent cursor from leaving the screen
 			config.cursor_y--;
 		break;
 	case ARROW_DOWN:
-		if (config.cursor_y != config.screen_rows - 1)
+		if (config.cursor_y !=
+		    config.screen_rows -
+			    1) // prevent cursor from leaving the screen
 			config.cursor_y++;
 		break;
 	}
 }
 
+// Processes keyboard input
 void process_keys()
 {
 	int c = read_keys();
 
 	switch (c) {
-	case CTRL_KEY('q'):
+	case CTRL_KEY('q'): // ctrl + q to quite the program
+		// Clear screen and exit program
 		write(STDOUT_FILENO, "\x1b[2J", 4);
 		write(STDOUT_FILENO, "\x1b[H", 3);
 		exit(0);
 		break;
 
-	case HOME_KEY:
+	case HOME_KEY: // Jump to start of line
 		config.cursor_x = 0;
 		break;
-	case END_KEY:
+	case END_KEY: // Jump to end of line
 		config.cursor_x = config.screen_cols - 1;
 		break;
 
@@ -324,16 +355,19 @@ void process_keys()
 	}
 }
 
+// Exit program with error
 void die(const char *s)
 {
 	// Clear screen and position curser
 	write(STDOUT_FILENO, "\x1b[2J", 4);
 	write(STDOUT_FILENO, "\x1b[H", 3);
 
+	// print error and exit
 	perror(s);
 	exit(EXIT_FAILURE);
 }
 
+// Clears screen and draws updated state
 void refresh_screen()
 {
 	struct abuf ab = ABUF_INIT;
