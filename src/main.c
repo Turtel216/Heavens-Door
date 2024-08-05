@@ -7,9 +7,11 @@ int main(int argc, char *argv[])
 	enable_RowMode();
 	init_editor();
 
+	// Check if a file path is given
 	if (argc >= 2)
-		open_editor(argv[1]);
+		open_editor(argv[1]); // open file
 
+	// Input loop
 	while (1) {
 		refresh_screen();
 		process_keys();
