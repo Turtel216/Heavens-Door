@@ -26,6 +26,7 @@ typedef struct text_row {
 // Editor internal state
 struct EditorsConfig {
 	int cursor_x, cursor_y; // cursor position
+	int row_offset;
 	int screen_rows;
 	int screen_cols;
 	size_t num_rows;
@@ -195,6 +196,7 @@ void init_editor()
 {
 	config.cursor_x = 0;
 	config.cursor_y = 0;
+	config.row_offset = 0;
 	config.num_rows = 0;
 	config.rows = NULL;
 
@@ -249,44 +251,49 @@ static void draw_rows(struct abuf *ab)
 {
 	int y;
 	for (y = 0; y < config.screen_rows; ++y) {
-		if (y >= config.num_rows) {
-			// At the beginning draw welcome message
-			if (config.num_rows == 0 &&
-			    y == config.screen_rows / 3) {
-				char welcome[80];
-				int welcomelen = snprintf(
-					welcome, sizeof(welcome),
-					"Heaven's Door editor -- version %s",
-					HEAVENS_DOOR_VERSION);
+		int file_row = y + config.row_offset;
+		if (file_row >= config.num_rows) {
+			if (y >= config.num_rows) {
+				// At the beginning draw welcome message
+				if (config.num_rows == 0 &&
+				    y == config.screen_rows / 3) {
+					char welcome[80];
+					int welcomelen = snprintf(
+						welcome, sizeof(welcome),
+						"Heaven's Door editor -- version %s",
+						HEAVENS_DOOR_VERSION);
 
-				if (welcomelen > config.screen_cols)
-					welcomelen = config.screen_cols;
+					if (welcomelen > config.screen_cols)
+						welcomelen = config.screen_cols;
 
-				// Add padding to welcome message
-				int padding =
-					(config.screen_cols - welcomelen) / 2;
-				if (padding) {
+					// Add padding to welcome message
+					int padding = (config.screen_cols -
+						       welcomelen) /
+						      2;
+					if (padding) {
+						buffer_append(ab, "~", 1);
+						padding--;
+					}
+
+					// Add necessery white space for padding
+					while (padding--)
+						buffer_append(ab, " ", 1);
+
+					// Draw welcome message
+					buffer_append(ab, welcome, welcomelen);
+				} else {
+					// Add '~' to empty lines
 					buffer_append(ab, "~", 1);
-					padding--;
 				}
-
-				// Add necessery white space for padding
-				while (padding--)
-					buffer_append(ab, " ", 1);
-
-				// Draw welcome message
-				buffer_append(ab, welcome, welcomelen);
-			} else {
-				// Add '~' to empty lines
-				buffer_append(ab, "~", 1);
 			}
 		} else { // Draw text
-			int len = config.rows[y].size;
+			int len = config.rows[file_row].size;
 			if (len > config.screen_cols)
 				len = config.screen_cols;
 
-			buffer_append(ab, config.rows[y].chars, len);
+			buffer_append(ab, config.rows[file_row].chars, len);
 		}
+
 		buffer_append(ab, "\x1b[K", 3);
 		if (y < config.screen_rows - 1) {
 			buffer_append(ab, "\r\n", 2);
@@ -312,9 +319,8 @@ static void move_cursor(int key)
 			config.cursor_y--;
 		break;
 	case ARROW_DOWN:
-		if (config.cursor_y !=
-		    config.screen_rows -
-			    1) // prevent cursor from leaving the screen
+		if (config.cursor_y <
+		    config.num_rows) // prevent cursor from leaving the screen
 			config.cursor_y++;
 		break;
 	}
@@ -367,9 +373,23 @@ void die(const char *s)
 	exit(EXIT_FAILURE);
 }
 
+// Adjust row offset in order to scroll to out of sight text
+static void scroll()
+{
+	if (config.cursor_y < config.row_offset) {
+		config.row_offset = config.cursor_y;
+	}
+	if (config.cursor_y >= config.row_offset + config.screen_rows) {
+		config.row_offset = config.cursor_y - config.screen_rows + 1;
+	}
+}
+
 // Clears screen and draws updated state
 void refresh_screen()
 {
+	// adjust row_offset
+	scroll();
+
 	struct abuf ab = ABUF_INIT;
 
 	buffer_append(&ab, "\x1b[?25l", 6);
