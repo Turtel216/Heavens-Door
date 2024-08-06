@@ -27,6 +27,7 @@ typedef struct text_row {
 struct EditorsConfig {
 	int cursor_x, cursor_y; // cursor position
 	int row_offset;
+	int col_offset;
 	int screen_rows;
 	int screen_cols;
 	size_t num_rows;
@@ -197,6 +198,7 @@ void init_editor(void)
 	config.cursor_x = 0;
 	config.cursor_y = 0;
 	config.row_offset = 0;
+	config.col_offset = 0;
 	config.num_rows = 0;
 	config.rows = NULL;
 
@@ -287,11 +289,17 @@ static void draw_rows(struct abuf *ab)
 				}
 			}
 		} else { // Draw text
-			int len = config.rows[file_row].size;
+			int len =
+				config.rows[file_row].size - config.col_offset;
+			if (len < 0)
+				len = 0;
 			if (len > config.screen_cols)
 				len = config.screen_cols;
 
-			buffer_append(ab, config.rows[file_row].chars, len);
+			buffer_append(
+				ab,
+				&config.rows[file_row].chars[config.col_offset],
+				len);
 		}
 
 		buffer_append(ab, "\x1b[K", 3);
@@ -304,13 +312,20 @@ static void draw_rows(struct abuf *ab)
 // Moves cursor on screen
 static void move_cursor(int key)
 {
+	// Get current row information
+	text_row *row = (config.cursor_y >= config.num_rows) ?
+				NULL :
+				&config.rows[config.cursor_y];
+
 	switch (key) {
 	case ARROW_LEFT:
 		if (config.cursor_x != 0)
 			config.cursor_x--;
 		break;
 	case ARROW_RIGHT:
-		if (config.cursor_x != config.screen_cols - 1)
+		if (row &&
+		    config.cursor_x <
+			    row->size) // prevent from scrolling of screen
 			config.cursor_x++;
 		break;
 	case ARROW_UP:
@@ -323,6 +338,17 @@ static void move_cursor(int key)
 		    config.num_rows) // prevent cursor from leaving the screen
 			config.cursor_y++;
 		break;
+	}
+
+	// Update row information
+	row = (config.cursor_y >= config.num_rows) ?
+		      NULL :
+		      &config.rows[config.cursor_y];
+	int row_len = row ? row->size : 0;
+
+	// Snap cursor to end of line
+	if (config.cursor_x > row_len) {
+		config.cursor_x = row_len;
 	}
 }
 
@@ -374,13 +400,19 @@ void die(const char *s)
 }
 
 // Adjust row offset in order to scroll to out of sight text
-static void scroll()
+static void scroll(void)
 {
 	if (config.cursor_y < config.row_offset) {
 		config.row_offset = config.cursor_y;
 	}
 	if (config.cursor_y >= config.row_offset + config.screen_rows) {
 		config.row_offset = config.cursor_y - config.screen_rows + 1;
+	}
+	if (config.cursor_x < config.col_offset) {
+		config.col_offset = config.col_offset;
+	}
+	if (config.col_offset >= config.col_offset + config.screen_cols) {
+		config.col_offset = config.col_offset - config.screen_cols + 1;
 	}
 }
 
@@ -400,7 +432,7 @@ void refresh_screen(void)
 	char buf[32];
 	snprintf(buf, sizeof(buf), "\x1b[%d;%dH",
 		 (config.cursor_y - config.row_offset) + 1,
-		 config.cursor_x + 1);
+		 (config.cursor_x - config.col_offset) + 1);
 	buffer_append(&ab, buf, strlen(buf));
 
 	buffer_append(&ab, "\x1b[?25h", 6);
