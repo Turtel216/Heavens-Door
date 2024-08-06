@@ -5,7 +5,9 @@
 // ###########################
 
 // Version number displayed on home screen
-#define HEAVENS_DOOR_VERSION "0.1"
+#define HEAVENS_DOOR_VERSION "0.1.1"
+
+#define TAB_STOP 8
 
 #include "heavens_door.h"
 #include <errno.h>
@@ -21,11 +23,14 @@
 typedef struct text_row {
 	size_t size; // size of each line
 	char *chars; // string of characters of each line
+	size_t render_size; // size of rendered line
+	char *render; // actual characters drawn on screen
 } text_row;
 
 // Editor internal state
 struct EditorsConfig {
 	int cursor_x, cursor_y; // cursor position
+	int render_x; // index of render string
 	int row_offset;
 	int col_offset;
 	int screen_rows;
@@ -197,6 +202,7 @@ void init_editor(void)
 {
 	config.cursor_x = 0;
 	config.cursor_y = 0;
+	config.render_x = 0;
 	config.row_offset = 0;
 	config.col_offset = 0;
 	config.num_rows = 0;
@@ -205,6 +211,40 @@ void init_editor(void)
 	// Set rows and collums according to screen size, exit on failure
 	if (get_window_size(&config.screen_rows, &config.screen_cols) == -1)
 		die("get window size");
+}
+
+// Initialize rendered row
+static void update_row(text_row *row)
+{
+	// count number of tabs
+	int tabs = 0;
+	for (int j = 0; j < row->size; ++j)
+		if (row->chars[j] == '\t')
+			tabs++;
+
+	// Allocate memory for rendered string
+	free(row->render);
+	row->render = malloc(row->size + tabs * (TAB_STOP - 1) + 1);
+
+	if (row->render == NULL)
+		die("Error allocating memory");
+
+	// Initialize rendered string
+	int idx = 0; // tracks number of characters
+	for (int j = 0; j < row->size; ++j) {
+		if (row->chars[j] == '\t') { // render tabs to string
+			row->render[idx++] = ' ';
+
+			while (idx % TAB_STOP != 0)
+				row->render[idx++] = ' ';
+		} else {
+			row->render[idx++] = row->chars[j];
+		}
+	}
+
+	// At NULL terminator at the end
+	row->render[idx] = '\0';
+	row->render_size = idx;
 }
 
 // Adds a row to output string
@@ -218,9 +258,17 @@ static void append_row(char *s, size_t len)
 	config.rows[at].size = len;
 	config.rows[at].chars = malloc(len + 1);
 
+	if (config.rows[at].chars == NULL)
+		die("Error allocating memory");
+
 	memcpy(config.rows[at].chars, s, len);
 
 	config.rows[at].chars[len] = '\0';
+
+	config.rows[at].render_size = 0;
+	config.rows[at].render = NULL;
+	update_row(&config.rows[at]);
+
 	config.num_rows++;
 }
 
@@ -251,8 +299,7 @@ void open_editor(char *filename)
 // Draws rows to screen
 static void draw_rows(struct abuf *ab)
 {
-	int y;
-	for (y = 0; y < config.screen_rows; ++y) {
+	for (int y = 0; y < config.screen_rows; ++y) {
 		int file_row = y + config.row_offset;
 		if (file_row >= config.num_rows) {
 			if (y >= config.num_rows) {
@@ -289,8 +336,8 @@ static void draw_rows(struct abuf *ab)
 				}
 			}
 		} else { // Draw text
-			int len =
-				config.rows[file_row].size - config.col_offset;
+			int len = config.rows[file_row].render_size -
+				  config.col_offset;
 			if (len < 0)
 				len = 0;
 			if (len > config.screen_cols)
@@ -298,7 +345,7 @@ static void draw_rows(struct abuf *ab)
 
 			buffer_append(
 				ab,
-				&config.rows[file_row].chars[config.col_offset],
+				&config.rows[file_row].render[config.col_offset],
 				len);
 		}
 
@@ -409,20 +456,39 @@ void die(const char *s)
 	exit(EXIT_FAILURE);
 }
 
+// Convert courser_x to render_x
+static int cursor_x_to_render_x(text_row *row, int cx)
+{
+	int rx = 0;
+	for (int j = 0; j < cx; ++j) {
+		if (row->chars[j] == '\t')
+			rx += (TAB_STOP - 1) - (rx % TAB_STOP);
+		rx++;
+	}
+
+	return rx;
+}
+
 // Adjust row offset in order to scroll to out of sight text
 static void scroll(void)
 {
+	// Adjust render x
+	config.render_x = 0;
+	if (config.cursor_y < config.num_rows)
+		config.render_x = cursor_x_to_render_x(
+			&config.rows[config.cursor_y], config.cursor_x);
+
 	if (config.cursor_y < config.row_offset) {
 		config.row_offset = config.cursor_y;
 	}
 	if (config.cursor_y >= config.row_offset + config.screen_rows) {
 		config.row_offset = config.cursor_y - config.screen_rows + 1;
 	}
-	if (config.cursor_x < config.col_offset) {
-		config.col_offset = config.col_offset;
+	if (config.render_x < config.col_offset) {
+		config.col_offset = config.render_x;
 	}
-	if (config.col_offset >= config.col_offset + config.screen_cols) {
-		config.col_offset = config.col_offset - config.screen_cols + 1;
+	if (config.render_x >= config.col_offset + config.screen_cols) {
+		config.col_offset = config.render_x - config.screen_cols + 1;
 	}
 }
 
@@ -442,7 +508,8 @@ void refresh_screen(void)
 	char buf[32];
 	snprintf(buf, sizeof(buf), "\x1b[%d;%dH",
 		 (config.cursor_y - config.row_offset) + 1,
-		 (config.cursor_x - config.col_offset) + 1);
+		 (config.render_x - config.col_offset) + 1);
+
 	buffer_append(&ab, buf, strlen(buf));
 
 	buffer_append(&ab, "\x1b[?25h", 6);
