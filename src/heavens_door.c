@@ -426,8 +426,10 @@ void process_keys(void)
 	case HOME_KEY: // Jump to start of line
 		config.cursor_x = 0;
 		break;
+
 	case END_KEY: // Jump to end of line
-		config.cursor_x = config.screen_cols - 1;
+		if (config.cursor_y < config.num_rows)
+			config.cursor_x = config.rows[config.cursor_x].size;
 		break;
 
 	case PAGE_UP:
@@ -444,6 +446,7 @@ void process_keys(void)
 		while (times--)
 			move_cursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
 	} break;
+
 	case ARROW_UP:
 	case ARROW_DOWN:
 	case ARROW_LEFT:
