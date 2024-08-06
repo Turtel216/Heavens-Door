@@ -79,7 +79,7 @@ void enable_RowMode(void)
 }
 
 // Reads keyboard input
-static int read_keys()
+static int read_keys(void)
 {
 	int nread;
 	char c;
@@ -192,7 +192,7 @@ static int get_window_size(int *rows, int *cols)
 }
 
 // Initializes editor state
-void init_editor()
+void init_editor(void)
 {
 	config.cursor_x = 0;
 	config.cursor_y = 0;
@@ -327,7 +327,7 @@ static void move_cursor(int key)
 }
 
 // Processes keyboard input
-void process_keys()
+void process_keys(void)
 {
 	int c = read_keys();
 
@@ -385,7 +385,7 @@ static void scroll()
 }
 
 // Clears screen and draws updated state
-void refresh_screen()
+void refresh_screen(void)
 {
 	// adjust row_offset
 	scroll();

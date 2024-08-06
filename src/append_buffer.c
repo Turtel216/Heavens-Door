@@ -17,7 +17,7 @@ void buffer_append(struct abuf *ab, const char *s, int len)
 }
 
 // Free output buffer
-void ab_free(struct abuf *ab)
+inline void ab_free(struct abuf *ab)
 {
 	free(ab->b);
 }
