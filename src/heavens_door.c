@@ -7,9 +7,14 @@
 // Version number displayed on home screen
 #define HEAVENS_DOOR_VERSION "0.1.1"
 
+// Tab size
 #define TAB_STOP 8
 
+// Marco for checking if ctrl key is pressed
+#define CTRL_KEY(k) ((k) & 0x1f)
+
 #include "heavens_door.h"
+#include "append_buffer.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,7 +22,6 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <string.h>
-#include "append_buffer.h"
 
 // Holds meta data for each line of text
 typedef struct text_row {
@@ -55,9 +59,6 @@ enum keys {
 	PAGE_UP,
 	PAGE_DOWN
 };
-
-// Marco for checking if ctrl key is pressed
-#define CTRL_KEY(k) ((k) & 0x1f)
 
 // Disables raw mode in terminal, exits program on fail
 static void disable_RawMode(void)
@@ -431,6 +432,14 @@ void process_keys(void)
 
 	case PAGE_UP:
 	case PAGE_DOWN: {
+		if (c == PAGE_UP) {
+			config.cursor_y = config.row_offset;
+		} else if (c == PAGE_DOWN) {
+			config.cursor_y =
+				config.row_offset + config.screen_rows - 1;
+			if (config.cursor_y > config.num_rows)
+				config.cursor_y = config.num_rows;
+		}
 		int times = config.screen_rows;
 		while (times--)
 			move_cursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
