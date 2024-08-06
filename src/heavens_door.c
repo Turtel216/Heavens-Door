@@ -319,14 +319,24 @@ static void move_cursor(int key)
 
 	switch (key) {
 	case ARROW_LEFT:
-		if (config.cursor_x != 0)
+		if (config.cursor_x != 0) {
 			config.cursor_x--;
+		} else if (config.cursor_y >
+			   0) { // move left at the start of a line
+			config.cursor_y--;
+			config.cursor_x = config.rows[config.cursor_y].size;
+		}
 		break;
 	case ARROW_RIGHT:
-		if (row &&
-		    config.cursor_x <
-			    row->size) // prevent from scrolling of screen
+		if (row && config.cursor_x < row->size) {
 			config.cursor_x++;
+		} else if (row &&
+			   config.cursor_x ==
+				   row->size) { // move left at the start of a line
+
+			config.cursor_y++;
+			config.cursor_x = 0;
+		}
 		break;
 	case ARROW_UP:
 		if (config.cursor_y !=
