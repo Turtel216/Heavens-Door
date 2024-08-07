@@ -11,6 +11,8 @@ int main(int argc, char *argv[])
 	if (argc >= 2)
 		open_editor(argv[1]); // open file
 
+	set_status_message("Press ctrl-q to quit");
+
 	// Input loop
 	while (1) {
 		refresh_screen();

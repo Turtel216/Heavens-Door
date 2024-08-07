@@ -13,6 +13,8 @@
 // Marco for checking if ctrl key is pressed
 #define CTRL_KEY(k) ((k) & 0x1f)
 
+#include <stdarg.h>
+#include <time.h>
 #include "heavens_door.h"
 #include "append_buffer.h"
 #include <errno.h>
@@ -39,8 +41,11 @@ struct EditorsConfig {
 	int col_offset;
 	int screen_rows;
 	int screen_cols;
-	size_t num_rows;
+	int num_rows;
 	text_row *rows; // Array of rows
+	char *filename; // Name of the file being displayed
+	char status_msg[80]; // Global status message displayed in stutus bar
+	time_t status_msg_time; // Time of the last status message
 	struct termios _termios; // structed uses for handling terminal
 };
 
@@ -208,10 +213,16 @@ void init_editor(void)
 	config.col_offset = 0;
 	config.num_rows = 0;
 	config.rows = NULL;
+	config.filename = NULL;
+	config.status_msg[0] = '\0';
+	config.status_msg_time = 0;
 
 	// Set rows and collums according to screen size, exit on failure
 	if (get_window_size(&config.screen_rows, &config.screen_cols) == -1)
 		die("get window size");
+
+	// Adjest cols for status bar
+	config.screen_rows -= 2;
 }
 
 // Initialize rendered row
@@ -273,9 +284,22 @@ static void append_row(char *s, size_t len)
 	config.num_rows++;
 }
 
+// Set global status message, displayed in status bar
+void set_status_message(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	vsnprintf(config.status_msg, sizeof(config.status_msg), fmt, ap);
+	va_end(ap);
+	config.status_msg_time = time(NULL);
+}
+
 // Opens up given file
 void open_editor(char *filename)
 {
+	free(config.filename);
+	config.filename = strdup(filename);
+
 	FILE *fp = fopen(filename, "r");
 
 	if (!fp)
@@ -295,6 +319,50 @@ void open_editor(char *filename)
 
 	free(line);
 	fclose(fp);
+}
+
+// Draw global status message
+static void draw_message(struct abuf *ab)
+{
+	buffer_append(ab, "\x1b[K", 3);
+	int msglen = strlen(config.status_msg);
+
+	if (msglen > config.screen_cols)
+		msglen = config.screen_cols;
+	if (msglen && time(NULL) - config.status_msg_time < 5)
+		buffer_append(ab, config.status_msg, msglen);
+}
+
+static void draw_status_bar(struct abuf *ab)
+{
+	buffer_append(ab, "\x1b[7m", 4);
+
+	char status[80], right_status[80]; // String holding status bar info
+
+	int len = snprintf(status, sizeof(status), "%.20s - %d lines",
+			   config.filename ? config.filename : "[No Name]",
+			   config.num_rows);
+
+	int rlen = snprintf(right_status, sizeof(right_status), "%d/%d",
+			    config.cursor_y + 1, config.num_rows);
+
+	if (len > config.screen_cols)
+		len = config.screen_cols;
+
+	buffer_append(ab, status, len);
+
+	while (len < config.screen_cols) {
+		if (config.screen_cols - len == rlen) {
+			buffer_append(ab, right_status, rlen);
+			break;
+		} else {
+			buffer_append(ab, " ", 1);
+			len++;
+		}
+	}
+
+	buffer_append(ab, "\x1b[m", 3);
+	buffer_append(ab, "\r\n", 2);
 }
 
 // Draws rows to screen
@@ -351,9 +419,7 @@ static void draw_rows(struct abuf *ab)
 		}
 
 		buffer_append(ab, "\x1b[K", 3);
-		if (y < config.screen_rows - 1) {
-			buffer_append(ab, "\r\n", 2);
-		}
+		buffer_append(ab, "\r\n", 2);
 	}
 }
 
@@ -516,6 +582,8 @@ void refresh_screen(void)
 	buffer_append(&ab, "\x1b[H", 3);
 
 	draw_rows(&ab);
+	draw_status_bar(&ab);
+	draw_message(&ab);
 
 	char buf[32];
 	snprintf(buf, sizeof(buf), "\x1b[%d;%dH",
