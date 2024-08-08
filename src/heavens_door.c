@@ -5,7 +5,7 @@
 // ###########################
 
 // Version number displayed on home screen
-#define HEAVENS_DOOR_VERSION "0.1.1"
+#define HEAVENS_DOOR_VERSION "0.3"
 
 // Tab size
 #define TAB_STOP 8
@@ -54,6 +54,7 @@ struct EditorsConfig config;
 
 // Key values
 enum keys {
+	BACKSPACE = 127,
 	ARROW_LEFT = 1000,
 	ARROW_RIGHT,
 	ARROW_UP,
@@ -284,6 +285,30 @@ static void append_row(char *s, size_t len)
 	config.num_rows++;
 }
 
+static void row_insert_char(text_row *row, int at, char c)
+{
+	if (at < 0 || at > row->size)
+		at = row->size;
+
+	row->chars = realloc(row->chars, row->size + 2);
+	memmove(&row->chars[at + 1], &row->chars[at], row->size - at + 1);
+
+	row->size++;
+	row->chars[at] = c;
+
+	update_row(row);
+}
+
+static void insert_char(int c)
+{
+	if (config.cursor_y == config.num_rows) {
+		append_row("", 0);
+	}
+
+	row_insert_char(&config.rows[config.cursor_y], config.cursor_x, c);
+	config.cursor_x++;
+}
+
 // Set global status message, displayed in status bar
 void set_status_message(const char *fmt, ...)
 {
@@ -482,6 +507,10 @@ void process_keys(void)
 	int c = read_keys();
 
 	switch (c) {
+	case '\r':
+		/* TODO */
+		break;
+
 	case CTRL_KEY('q'): // ctrl + q to quite the program
 		// Clear screen and exit program
 		write(STDOUT_FILENO, "\x1b[2J", 4);
@@ -496,6 +525,12 @@ void process_keys(void)
 	case END_KEY: // Jump to end of line
 		if (config.cursor_y < config.num_rows)
 			config.cursor_x = config.rows[config.cursor_x].size;
+		break;
+
+	case BACKSPACE:
+	case CTRL_KEY('h'):
+	case DELETE_KEY:
+		/* TODO */
 		break;
 
 	case PAGE_UP:
@@ -518,6 +553,14 @@ void process_keys(void)
 	case ARROW_LEFT:
 	case ARROW_RIGHT:
 		move_cursor(c);
+		break;
+
+	case CTRL_KEY('l'):
+	case '\x1b':
+		break;
+
+	default:
+		insert_char(c);
 		break;
 	}
 }
