@@ -13,6 +13,7 @@
 // Marco for checking if ctrl key is pressed
 #define CTRL_KEY(k) ((k) & 0x1f)
 
+#include <fcntl.h>
 #include <stdarg.h>
 #include <time.h>
 #include "heavens_door.h"
@@ -346,6 +347,65 @@ void open_editor(char *filename)
 	fclose(fp);
 }
 
+// Convert a text_row into a string suitable for file input.
+// Caller needs to call free on buf
+static char *row_to_string(int *buf_len)
+{
+	int totel_len = 0;
+	int j;
+	for (j = 0; j < config.num_rows; j++)
+		totel_len += config.rows[j].size + 1;
+
+	*buf_len = totel_len;
+	char *buf = malloc(totel_len);
+	char *p = buf;
+
+	for (j = 0; j < config.num_rows; j++) {
+		memcpy(p, config.rows[j].chars, config.rows[j].size);
+		p += config.rows[j].size;
+		*p = '\n';
+		p++;
+	}
+
+	return buf;
+}
+
+// Save text_row contect to file
+void save_to_file(void)
+{
+	// Check if file name has been specified
+	if (config.filename == NULL) {
+		set_status_message("Added filename before saving");
+		return;
+	}
+
+	int len;
+	// Get output string
+	char *buf = row_to_string(&len);
+
+	// Open up file. Create new file if one does'nt exist
+	int fd = open(config.filename, O_RDWR | O_CREAT, 0644);
+
+	// Save to file,
+	// close file and free buffer
+	if (fd != -1) {
+		if (ftruncate(fd, len) != -1) {
+			if (write(fd, buf, len) == len) {
+				close(fd);
+				free(buf);
+				set_status_message("%d bytes written to disk",
+						   len);
+				return;
+			}
+		}
+		close(fd);
+	}
+
+	// Error accured!
+	free(buf);
+	set_status_message("Can't save! I/O error: %s", strerror(errno));
+}
+
 // Draw global status message
 static void draw_message(struct abuf *ab)
 {
@@ -516,6 +576,10 @@ void process_keys(void)
 		write(STDOUT_FILENO, "\x1b[2J", 4);
 		write(STDOUT_FILENO, "\x1b[H", 3);
 		exit(0);
+		break;
+
+	case CTRL_KEY('s'):
+		save_to_file();
 		break;
 
 	case HOME_KEY: // Jump to start of line
