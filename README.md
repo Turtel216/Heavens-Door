@@ -14,9 +14,9 @@
 
 ### Opening a file and closing files
 
-- To open a file add the file path after the executable
-
-        i.e ./build/rohan ./test-files/test.txt
+- To open a file add the file path after the executable. For example, after build the executable in ./build you open the test0.txt file in the ./test-files directory like so:
+  
+         ./build/rohan ./test-files/test.txt
 
 - To quit the editor press **ctrl+q**
 
@@ -26,9 +26,9 @@
 
 - To move around in all direction use the **arrow-keys**
 
-- To jump to the start/end of a line press the home/end key respectevly
+- To jump to the start/end of a line press the **home**/**end** key respectively
 
-- To jump to the beginning/end of a file press the page-up/page-down keys respectevly
+- To jump to the beginning/end of a file press the **page-up**/**page-down** keys respectively
 
 ### Inserting characters
 
