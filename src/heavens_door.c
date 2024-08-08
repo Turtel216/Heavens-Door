@@ -13,6 +13,11 @@
 // Marco for checking if ctrl key is pressed
 #define CTRL_KEY(k) ((k) & 0x1f)
 
+//TODO bit signitures for diffrent modes
+#define INSERT_MODE 00
+#define NORMAL_MODE 01
+#define COMMAND_MODE 11
+
 #include <fcntl.h>
 #include <stdarg.h>
 #include <time.h>
@@ -34,6 +39,7 @@ typedef struct text_row {
 	char *render; // actual characters drawn on screen
 } text_row;
 
+//TODO add 2 byte bit field for editor mode status
 // Editor internal state
 struct EditorsConfig {
 	int cursor_x, cursor_y; // cursor position
@@ -375,7 +381,7 @@ void save_to_file(void)
 {
 	// Check if file name has been specified
 	if (config.filename == NULL) {
-		set_status_message("Added filename before saving");
+		set_status_message("Add filename before saving");
 		return;
 	}
 
