@@ -12,6 +12,10 @@
 // Marco for checking if ctrl key is pressed
 #define CTRL_KEY(k) ((k) & 0x1f)
 
+// Marco for keeping track
+// how many times quite has been pressed
+#define QUITE_TIMES 3;
+
 // Marco for holding state that there is unsaved data
 #define DIRTY 1
 // Marco for holding state that there is no unsaved data
@@ -467,6 +471,7 @@ static void move_cursor(int key)
 // Processes keyboard input
 void process_keys(void)
 {
+	static int quit_times = QUITE_TIMES;
 	int c = read_keys();
 
 	switch (c) {
@@ -475,6 +480,14 @@ void process_keys(void)
 		break;
 
 	case CTRL_KEY('q'): // ctrl + q to quite the program
+		// Check for unsaved data
+		if (config.dirty == DIRTY && quit_times > 0) {
+			set_status_message(
+				"WARNING!!! File has unsaved changes. "
+				"Press ctrl-q %d more times to quit.",
+				quit_times--);
+			return;
+		}
 		// Clear screen and exit program
 		write(STDOUT_FILENO, "\x1b[2J", 4);
 		write(STDOUT_FILENO, "\x1b[H", 3);
@@ -530,6 +543,8 @@ void process_keys(void)
 		insert_char(c);
 		break;
 	}
+
+	quit_times = QUITE_TIMES;
 }
 
 // Adjust row offset in order to scroll to out of sight text
