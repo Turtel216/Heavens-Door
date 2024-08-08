@@ -4,6 +4,8 @@
 #define _GNU_SOURCE
 // ###########################
 
+// Marcos
+
 // Version number displayed on home screen
 #define HEAVENS_DOOR_VERSION "0.3"
 
@@ -15,6 +17,9 @@
 #define NORMAL_MODE 01
 #define COMMAND_MODE 11
 
+//#######
+
+// Standard lib
 #include <fcntl.h>
 #include <stdarg.h>
 #include <time.h>
@@ -25,11 +30,15 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <string.h>
+//#############
+
+// Custom lib
 #include "heavens_door.h"
 #include "append_buffer.h"
 #include "text_row.h"
 #include "keys_and_mouse.h"
 #include "global_util.h"
+//###########
 
 //TODO add 2 byte bit field for editor mode status
 // Editor internal state
@@ -50,6 +59,14 @@ struct EditorsConfig {
 
 // Global editors state
 struct EditorsConfig config;
+
+// Function declarations
+
+// Adjust row offset in order to scroll to out of sight text
+static void scroll(void);
+//######################
+
+// Init and Exit functions
 
 // Disables raw mode in terminal, exits program on fail
 static void disable_RawMode(void)
@@ -115,6 +132,10 @@ void init_editor(void)
 	config.screen_rows -= 2;
 }
 
+//########################
+
+// Local text row functions
+
 // Adds a row to output string
 static void append_row(char *s, size_t len)
 {
@@ -140,25 +161,31 @@ static void append_row(char *s, size_t len)
 	config.num_rows++;
 }
 
-static void insert_char(int c)
+// Convert a text_row into a string suitable for file input.
+// Caller needs to call free on buf
+static char *row_to_string(int *buf_len)
 {
-	if (config.cursor_y == config.num_rows) {
-		append_row("", 0);
+	int totel_len = 0;
+	int j;
+	for (j = 0; j < config.num_rows; j++)
+		totel_len += config.rows[j].size + 1;
+
+	*buf_len = totel_len;
+	char *buf = malloc(totel_len);
+	char *p = buf;
+
+	for (j = 0; j < config.num_rows; j++) {
+		memcpy(p, config.rows[j].chars, config.rows[j].size);
+		p += config.rows[j].size;
+		*p = '\n';
+		p++;
 	}
 
-	row_insert_char(&config.rows[config.cursor_y], config.cursor_x, c);
-	config.cursor_x++;
+	return buf;
 }
+//#########################
 
-// Set global status message, displayed in status bar
-void set_status_message(const char *fmt, ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
-	vsnprintf(config.status_msg, sizeof(config.status_msg), fmt, ap);
-	va_end(ap);
-	config.status_msg_time = time(NULL);
-}
+// File I/O
 
 // Opens up given file
 void open_editor(char *filename)
@@ -185,29 +212,6 @@ void open_editor(char *filename)
 
 	free(line);
 	fclose(fp);
-}
-
-// Convert a text_row into a string suitable for file input.
-// Caller needs to call free on buf
-static char *row_to_string(int *buf_len)
-{
-	int totel_len = 0;
-	int j;
-	for (j = 0; j < config.num_rows; j++)
-		totel_len += config.rows[j].size + 1;
-
-	*buf_len = totel_len;
-	char *buf = malloc(totel_len);
-	char *p = buf;
-
-	for (j = 0; j < config.num_rows; j++) {
-		memcpy(p, config.rows[j].chars, config.rows[j].size);
-		p += config.rows[j].size;
-		*p = '\n';
-		p++;
-	}
-
-	return buf;
 }
 
 // Save text_row contect to file
@@ -244,6 +248,19 @@ void save_to_file(void)
 	// Error accured!
 	free(buf);
 	set_status_message("Can't save! I/O error: %s", strerror(errno));
+}
+//########
+
+// Character render functions
+
+static void insert_char(int c)
+{
+	if (config.cursor_y == config.num_rows) {
+		append_row("", 0);
+	}
+
+	row_insert_char(&config.rows[config.cursor_y], config.cursor_x, c);
+	config.cursor_x++;
 }
 
 // Draw global status message
@@ -347,6 +364,38 @@ static void draw_rows(struct abuf *ab)
 		buffer_append(ab, "\r\n", 2);
 	}
 }
+
+// Clears screen and draws updated state
+void refresh_screen(void)
+{
+	// adjust row_offset
+	scroll();
+
+	struct abuf ab = ABUF_INIT;
+
+	buffer_append(&ab, "\x1b[?25l", 6);
+	buffer_append(&ab, "\x1b[H", 3);
+
+	draw_rows(&ab);
+	draw_status_bar(&ab);
+	draw_message(&ab);
+
+	char buf[32];
+	snprintf(buf, sizeof(buf), "\x1b[%d;%dH",
+		 (config.cursor_y - config.row_offset) + 1,
+		 (config.render_x - config.col_offset) + 1);
+
+	buffer_append(&ab, buf, strlen(buf));
+
+	buffer_append(&ab, "\x1b[?25h", 6);
+	write(STDOUT_FILENO, ab.b, ab.len);
+
+	ab_free(&ab);
+}
+
+//#########################
+
+// User I/O
 
 // Moves cursor on screen
 static void move_cursor(int key)
@@ -469,18 +518,6 @@ void process_keys(void)
 	}
 }
 
-// Exit program with error
-void die(const char *s)
-{
-	// Clear screen and position curser
-	write(STDOUT_FILENO, "\x1b[2J", 4);
-	write(STDOUT_FILENO, "\x1b[H", 3);
-
-	// print error and exit
-	perror(s);
-	exit(EXIT_FAILURE);
-}
-
 // Adjust row offset in order to scroll to out of sight text
 static void scroll(void)
 {
@@ -503,31 +540,30 @@ static void scroll(void)
 		config.col_offset = config.render_x - config.screen_cols + 1;
 	}
 }
+//#########
 
-// Clears screen and draws updated state
-void refresh_screen(void)
+// Global util functions declarations
+
+// Exit program with error
+void die(const char *s)
 {
-	// adjust row_offset
-	scroll();
+	// Clear screen and position curser
+	write(STDOUT_FILENO, "\x1b[2J", 4);
+	write(STDOUT_FILENO, "\x1b[H", 3);
 
-	struct abuf ab = ABUF_INIT;
-
-	buffer_append(&ab, "\x1b[?25l", 6);
-	buffer_append(&ab, "\x1b[H", 3);
-
-	draw_rows(&ab);
-	draw_status_bar(&ab);
-	draw_message(&ab);
-
-	char buf[32];
-	snprintf(buf, sizeof(buf), "\x1b[%d;%dH",
-		 (config.cursor_y - config.row_offset) + 1,
-		 (config.render_x - config.col_offset) + 1);
-
-	buffer_append(&ab, buf, strlen(buf));
-
-	buffer_append(&ab, "\x1b[?25h", 6);
-	write(STDOUT_FILENO, ab.b, ab.len);
-
-	ab_free(&ab);
+	// print error and exit
+	perror(s);
+	exit(EXIT_FAILURE);
 }
+
+// Set global status message, displayed in status bar
+void set_status_message(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	vsnprintf(config.status_msg, sizeof(config.status_msg), fmt, ap);
+	va_end(ap);
+	config.status_msg_time = time(NULL);
+}
+
+//##################################

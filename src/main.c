@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "heavens_door.h"
+#include "global_util.h"
 
 int main(int argc, char *argv[])
 {

@@ -10,5 +10,3 @@ void refresh_screen(void);
 void init_editor(void);
 // Opens up given file
 void open_editor(char *filename);
-// Set global status message, displayed in status bar
-void set_status_message(const char *fmt, ...);
