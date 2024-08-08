@@ -1,4 +1,4 @@
-# Heaven's Door	
+# Heaven's Door<sub> version 0.3</sub>
 
 ### A simple text editor written in the C programming language
 
