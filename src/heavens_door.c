@@ -147,20 +147,24 @@ void init_editor(void)
 // Local text row functions
 
 // Adds a row to output string
-static void append_row(char *s, size_t len)
+static void append_row(int at, char *s, size_t len)
 {
+	if (at < 0 || at > config.num_rows)
+		return;
+
 	config.rows =
 		realloc(config.rows, sizeof(text_row) * (config.num_rows + 1));
 	if (config.rows == NULL)
-		die("Error reallocating memory");
+		die("error reallocating memory");
 
-	int at = config.num_rows;
+	memmove(&config.rows[at + 1], &config.rows[at],
+		sizeof(text_row) * (config.num_rows - at));
 
 	config.rows[at].size = len;
 	config.rows[at].chars = malloc(len + 1);
 
 	if (config.rows[at].chars == NULL)
-		die("Error allocating memory");
+		die("error allocating memory");
 
 	memcpy(config.rows[at].chars, s, len);
 
@@ -244,7 +248,7 @@ void open_editor(char *filename)
 		while (linelen > 0 &&
 		       (line[linelen - 1] == '\n' || line[linelen - 1] == '\r'))
 			linelen--;
-		append_row(line, linelen);
+		append_row(config.num_rows, line, linelen);
 	}
 
 	free(line);
@@ -297,7 +301,7 @@ void save_to_file(void)
 static void insert_char(int c)
 {
 	if (config.cursor_y == config.num_rows) {
-		append_row("", 0);
+		append_row(config.num_rows, "", 0);
 	}
 
 	row_insert_char(&config.rows[config.cursor_y], config.cursor_x, c);
@@ -319,6 +323,31 @@ static void delete_row(int at)
 
 	config.num_rows--;
 	config.dirty = DIRTY;
+}
+
+// Move to new line and add \n
+void insert_new_line()
+{
+	if (config.cursor_x == 0) {
+		append_row(config.cursor_y, "", 0);
+	} else {
+		// Get current row
+		text_row *row = &config.rows[config.cursor_y];
+		// Append to next row
+		append_row(config.cursor_y + 1, &row->chars[config.cursor_x],
+			   row->size - config.cursor_x);
+
+		// Update row info
+		row = &config.rows[config.cursor_y];
+		row->size = config.cursor_x;
+		row->chars[row->size] = '\0';
+		// Update rows
+		update_row(row);
+	}
+
+	// Move cursor to start of next line
+	config.cursor_y++;
+	config.cursor_x = 0;
 }
 
 // Delete character
@@ -550,7 +579,7 @@ void process_keys(void)
 
 	switch (c) {
 	case '\r':
-		/* TODO */
+		insert_new_line();
 		break;
 
 	case CTRL_KEY('q'): // ctrl + q to quite the program
