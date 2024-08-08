@@ -7,7 +7,7 @@
 // Marcos
 
 // Version number displayed on home screen
-#define HEAVENS_DOOR_VERSION "0.3"
+#define HEAVENS_DOOR_VERSION "0.5"
 
 // Marco for checking if ctrl key is pressed
 #define CTRL_KEY(k) ((k) & 0x1f)
@@ -328,6 +328,7 @@ static void delete_row(int at)
 // Move to new line and add \n
 void insert_new_line()
 {
+	// Check if start of line
 	if (config.cursor_x == 0) {
 		append_row(config.cursor_y, "", 0);
 	} else {
