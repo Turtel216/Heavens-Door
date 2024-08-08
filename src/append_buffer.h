@@ -1,3 +1,5 @@
+#pragma once
+
 // Struct holding output buffer
 struct abuf {
 	char *b;

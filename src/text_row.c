@@ -44,6 +44,9 @@ void row_insert_char(text_row *row, int at, char c)
 		at = row->size;
 
 	row->chars = realloc(row->chars, row->size + 2);
+	if (row->chars == NULL)
+		die("Error reallocating memory");
+
 	memmove(&row->chars[at + 1], &row->chars[at], row->size - at + 1);
 
 	row->size++;

@@ -13,12 +13,13 @@
 #define CTRL_KEY(k) ((k) & 0x1f)
 
 // Marco for keeping track
-// how many times quite has been pressed
+// how many times quit has
+// be pressed until force quite
 #define QUITE_TIMES 3
 
-// Marco for holding state that there is unsaved data
+// Marco for marking file as dirty aka unsaved data
 #define DIRTY 1
-// Marco for holding state that there is no unsaved data
+// Marco for marking file as clean aka no unsaved data
 #define CLEAN 0
 
 //TODO bit signitures for diffrent modes
@@ -54,10 +55,8 @@
 struct EditorsConfig {
 	int cursor_x, cursor_y; // cursor position
 	int render_x; // index of render string
-	int row_offset;
-	int col_offset;
-	int screen_rows;
-	int screen_cols;
+	int row_offset, col_offset;
+	int screen_rows, screen_cols;
 	int num_rows;
 	text_row *rows; // Array of rows
 	unsigned int dirty : 1; // Bit flag for tracking saved/unsaved data
@@ -70,7 +69,7 @@ struct EditorsConfig {
 // Global editors state
 struct EditorsConfig config;
 
-// Function declarations
+// Function definitions
 
 // Adjust row offset in order to scroll to out of sight text
 static void scroll(void);
@@ -152,6 +151,8 @@ static void append_row(char *s, size_t len)
 {
 	config.rows =
 		realloc(config.rows, sizeof(text_row) * (config.num_rows + 1));
+	if (config.rows == NULL)
+		die("Error reallocating memory");
 
 	int at = config.num_rows;
 
@@ -184,6 +185,9 @@ static char *row_to_string(int *buf_len)
 
 	*buf_len = totel_len;
 	char *buf = malloc(totel_len);
+	if (buf == NULL)
+		die("Error allocating memory");
+
 	char *p = buf;
 
 	for (j = 0; j < config.num_rows; j++) {
@@ -201,6 +205,9 @@ void row_append_string(text_row *row, char *s, size_t len)
 {
 	// Allocate memory for new string
 	row->chars = realloc(row->chars, row->size + len + 1);
+	if (row->chars == NULL)
+		die("Error reallocating memory");
+
 	// Move string to new row
 	memcpy(&row->chars[row->size], s, len);
 	// Adjust row for new string
