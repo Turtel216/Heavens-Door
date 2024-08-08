@@ -21,8 +21,6 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <time.h>
-#include "heavens_door.h"
-#include "append_buffer.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,14 +28,9 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <string.h>
-
-// Holds meta data for each line of text
-typedef struct text_row {
-	size_t size; // size of each line
-	char *chars; // string of characters of each line
-	size_t render_size; // size of rendered line
-	char *render; // actual characters drawn on screen
-} text_row;
+#include "heavens_door.h"
+#include "append_buffer.h"
+#include "text_row.h"
 
 //TODO add 2 byte bit field for editor mode status
 // Editor internal state
@@ -233,40 +226,6 @@ void init_editor(void)
 	config.screen_rows -= 2;
 }
 
-// Initialize rendered row
-static void update_row(text_row *row)
-{
-	// count number of tabs
-	int tabs = 0;
-	for (int j = 0; j < row->size; ++j)
-		if (row->chars[j] == '\t')
-			tabs++;
-
-	// Allocate memory for rendered string
-	free(row->render);
-	row->render = malloc(row->size + tabs * (TAB_STOP - 1) + 1);
-
-	if (row->render == NULL)
-		die("Error allocating memory");
-
-	// Initialize rendered string
-	int idx = 0; // tracks number of characters
-	for (int j = 0; j < row->size; ++j) {
-		if (row->chars[j] == '\t') { // render tabs to string
-			row->render[idx++] = ' ';
-
-			while (idx % TAB_STOP != 0)
-				row->render[idx++] = ' ';
-		} else {
-			row->render[idx++] = row->chars[j];
-		}
-	}
-
-	// At NULL terminator at the end
-	row->render[idx] = '\0';
-	row->render_size = idx;
-}
-
 // Adds a row to output string
 static void append_row(char *s, size_t len)
 {
@@ -290,20 +249,6 @@ static void append_row(char *s, size_t len)
 	update_row(&config.rows[at]);
 
 	config.num_rows++;
-}
-
-static void row_insert_char(text_row *row, int at, char c)
-{
-	if (at < 0 || at > row->size)
-		at = row->size;
-
-	row->chars = realloc(row->chars, row->size + 2);
-	memmove(&row->chars[at + 1], &row->chars[at], row->size - at + 1);
-
-	row->size++;
-	row->chars[at] = c;
-
-	update_row(row);
 }
 
 static void insert_char(int c)
@@ -645,19 +590,6 @@ void die(const char *s)
 	// print error and exit
 	perror(s);
 	exit(EXIT_FAILURE);
-}
-
-// Convert courser_x to render_x
-static int cursor_x_to_render_x(text_row *row, int cx)
-{
-	int rx = 0;
-	for (int j = 0; j < cx; ++j) {
-		if (row->chars[j] == '\t')
-			rx += (TAB_STOP - 1) - (rx % TAB_STOP);
-		rx++;
-	}
-
-	return rx;
 }
 
 // Adjust row offset in order to scroll to out of sight text
