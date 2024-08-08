@@ -64,3 +64,25 @@ int cursor_x_to_render_x(text_row *row, int cx)
 
 	return rx;
 }
+
+// Delete character from text row
+void row_delete_char(text_row *row, int at)
+{
+	// Check for out of bounce index
+	if (at < 0 || at >= row->size)
+		return;
+
+	// Remove char from text_row
+	memmove(&row->chars[at], &row->chars[at + 1], row->size - at);
+	row->size--;
+
+	// Update row
+	update_row(row);
+}
+
+// Free given text_row
+void free_row(text_row *row)
+{
+	free(row->render);
+	free(row->chars);
+}

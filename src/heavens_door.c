@@ -14,7 +14,7 @@
 
 // Marco for keeping track
 // how many times quite has been pressed
-#define QUITE_TIMES 3;
+#define QUITE_TIMES 3
 
 // Marco for holding state that there is unsaved data
 #define DIRTY 1
@@ -195,6 +195,24 @@ static char *row_to_string(int *buf_len)
 
 	return buf;
 }
+
+// Add new string to row
+void row_append_string(text_row *row, char *s, size_t len)
+{
+	// Allocate memory for new string
+	row->chars = realloc(row->chars, row->size + len + 1);
+	// Move string to new row
+	memcpy(&row->chars[row->size], s, len);
+	// Adjust row for new string
+	row->size += len;
+	// Append NULL terminator
+	row->chars[row->size] = '\0';
+
+	update_row(row);
+	// Mark file as dirty
+	config.dirty = DIRTY;
+}
+
 //#########################
 
 // File I/O
@@ -278,6 +296,55 @@ static void insert_char(int c)
 	row_insert_char(&config.rows[config.cursor_y], config.cursor_x, c);
 	config.dirty = DIRTY;
 	config.cursor_x++;
+}
+
+static void delete_row(int at)
+{
+	// Check for out of bounce index
+	if (at < 0 || at >= config.num_rows)
+		return;
+
+	// Delete previous row
+	free_row(&config.rows[at]);
+	// Move next row to current row
+	memmove(&config.rows[at], &config.rows[at + 1],
+		sizeof(text_row) * (config.num_rows - at - 1));
+
+	config.num_rows--;
+	config.dirty = DIRTY;
+}
+
+// Delete character
+static void delete_char(void)
+{
+	// Check for out of bounce cursor
+	if (config.cursor_y == config.num_rows)
+		return;
+	if (config.cursor_x == 0 && config.cursor_y == 0)
+		return;
+
+	// delete character from text row
+	text_row *row = &config.rows[config.cursor_y];
+	if (config.cursor_x > 0) { // Check for out of bounce cursor
+		row_delete_char(row, config.cursor_x - 1);
+		// Reposition cursor
+		config.cursor_x--;
+	} else {
+		// Update cursor on x axis
+		config.cursor_x = config.rows[config.cursor_y - 1].size;
+
+		// Append new string to row
+		row_append_string(&config.rows[config.cursor_y - 1], row->chars,
+				  row->size);
+		// delete old row
+		delete_row(config.cursor_y);
+
+		// Update cursor on y axis
+		config.cursor_y--;
+	}
+
+	// Mark file as dirty
+	config.dirty = DIRTY;
 }
 
 // Draw global status message
@@ -510,7 +577,9 @@ void process_keys(void)
 	case BACKSPACE:
 	case CTRL_KEY('h'):
 	case DELETE_KEY:
-		/* TODO */
+		if (c == DELETE_KEY)
+			move_cursor(ARROW_RIGHT);
+		delete_char();
 		break;
 
 	case PAGE_UP:

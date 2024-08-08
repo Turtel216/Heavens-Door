@@ -18,3 +18,7 @@ void update_row(text_row *row);
 void row_insert_char(text_row *row, int at, char c);
 // Convert courser_x to render_x
 int cursor_x_to_render_x(text_row *row, int cx);
+// Delete character from text row
+void row_delete_char(text_row *row, int at);
+// Free given text_row
+void free_row(text_row *row);
