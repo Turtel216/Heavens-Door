@@ -12,6 +12,11 @@
 // Marco for checking if ctrl key is pressed
 #define CTRL_KEY(k) ((k) & 0x1f)
 
+// Marco for holding state that there is unsaved data
+#define DIRTY 1
+// Marco for holding state that there is no unsaved data
+#define CLEAN 0
+
 //TODO bit signitures for diffrent modes
 #define INSERT_MODE 00
 #define NORMAL_MODE 01
@@ -51,6 +56,7 @@ struct EditorsConfig {
 	int screen_cols;
 	int num_rows;
 	text_row *rows; // Array of rows
+	unsigned int dirty : 1; // Bit flag for tracking saved/unsaved data
 	char *filename; // Name of the file being displayed
 	char status_msg[80]; // Global status message displayed in stutus bar
 	time_t status_msg_time; // Time of the last status message
@@ -120,6 +126,7 @@ void init_editor(void)
 	config.col_offset = 0;
 	config.num_rows = 0;
 	config.rows = NULL;
+	config.dirty = CLEAN;
 	config.filename = NULL;
 	config.status_msg[0] = '\0';
 	config.status_msg_time = 0;
@@ -159,6 +166,7 @@ static void append_row(char *s, size_t len)
 	update_row(&config.rows[at]);
 
 	config.num_rows++;
+	config.dirty = DIRTY;
 }
 
 // Convert a text_row into a string suitable for file input.
@@ -212,6 +220,7 @@ void open_editor(char *filename)
 
 	free(line);
 	fclose(fp);
+	config.dirty = CLEAN;
 }
 
 // Save text_row contect to file
@@ -239,6 +248,9 @@ void save_to_file(void)
 				free(buf);
 				set_status_message("%d bytes written to disk",
 						   len);
+
+				// Mark that there is no unsaved data
+				config.dirty = CLEAN;
 				return;
 			}
 		}
@@ -260,6 +272,7 @@ static void insert_char(int c)
 	}
 
 	row_insert_char(&config.rows[config.cursor_y], config.cursor_x, c);
+	config.dirty = DIRTY;
 	config.cursor_x++;
 }
 
@@ -281,9 +294,10 @@ static void draw_status_bar(struct abuf *ab)
 
 	char status[80], right_status[80]; // String holding status bar info
 
-	int len = snprintf(status, sizeof(status), "%.20s - %d lines",
+	int len = snprintf(status, sizeof(status), "%.20s - %d lines %s",
 			   config.filename ? config.filename : "[No Name]",
-			   config.num_rows);
+			   config.num_rows,
+			   config.dirty == DIRTY ? "(modified)" : "");
 
 	int rlen = snprintf(right_status, sizeof(right_status), "%d/%d",
 			    config.cursor_y + 1, config.num_rows);
