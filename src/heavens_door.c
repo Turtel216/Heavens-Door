@@ -30,6 +30,7 @@
 //#######
 
 // Standard lib
+#include <ctype.h>
 #include <fcntl.h>
 #include <stdarg.h>
 #include <time.h>
@@ -260,8 +261,12 @@ void open_editor(char *filename)
 void save_to_file(void)
 {
 	// Check if file name has been specified
+	if (config.filename == NULL)
+		config.filename = promt("Save as: %s");
+
+	// Check if promt was successful
 	if (config.filename == NULL) {
-		set_status_message("Add filename before saving");
+		set_status_message("Save aborted");
 		return;
 	}
 
@@ -701,4 +706,47 @@ void set_status_message(const char *fmt, ...)
 	config.status_msg_time = time(NULL);
 }
 
+// Create promt
+char *promt(char *prompt)
+{
+	// Create buffer string
+	size_t bufsize = 128;
+	char *buf = malloc(bufsize);
+	if (buf == NULL)
+		die("Error allocating memory");
+
+	size_t buflen = 0;
+	buf[0] = '\0';
+
+	//TODO add endless loop fail save counter
+	while (1) {
+		set_status_message(prompt, buf);
+		refresh_screen();
+
+		int c = read_keys();
+		// Check if user uses deletion keys
+		if (c == DELETE_KEY || c == CTRL_KEY('h') || c == BACKSPACE) {
+			if (buflen != 0)
+				buf[--buflen] = '\0';
+		} else if (c == '\x1b') { // Check of escape key
+			// Cancel promt
+			set_status_message("");
+			free(buf);
+			return NULL;
+		} else if (c == '\r') { // enter pressed, return buf
+			if (buflen != 0) {
+				set_status_message("");
+				return buf;
+			}
+		} else if (!iscntrl(c) && c < 128) { // Append to buffer
+			if (buflen == bufsize - 1) {
+				bufsize *= 2;
+				buf = realloc(buf, bufsize);
+			}
+
+			buf[buflen++] = c;
+			buf[buflen] = '\0';
+		}
+	}
+}
 //##################################

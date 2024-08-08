@@ -5,7 +5,19 @@
 > [!NOTE]
 > The editor is usable but still under development.
 
-### Currently at version 0.5
+## Development plan
+
+The Current version of Heaven's Door is **0.5**. This is my plan for the feature:
+
+- **Version 0.6** Improve and extend current features.
+
+- **Version 0.7** Add text search.
+
+- **Version 0.8** Add Syntax highliting for my esoteric programing language [Xanadu](https://github.com/Turtel216/Xanadu).
+
+- **Version 0.9** Add Vim like motions.
+
+- **Version 1.0** Code improvements and bug fixing.
 
 ## Hot keys so far
 
@@ -17,6 +29,8 @@
 - To open a file add the file path after the executable. For example, after build the executable in ./build you open the test0.txt file in the ./test-files directory like so:
   
          ./build/rohan ./test-files/test.txt
+
+- To create a new file run the executable normally and when you are done press **ctrl+s**. The the editor will ask you for a name and create the file under that name
 
 - To quit the editor press **ctrl+q**
 
@@ -32,8 +46,8 @@
 
 ### Inserting characters
 
-- Type out the characters that you want and they will be added to the text string. This includes **space**
+- Type out the characters that you want and they will be added to the text string. This includes **spaces**
 
-- To add a new line press  **enter**
+- To add a new line press **enter**.
 
-- To delete backwards use **backspace** or **ctrl+h**. To delete the forward press **Delete**
+- To delete backwards use the **backspace** or **ctrl+h** keys. To delete forwards press the **Delete** key.
