@@ -7,7 +7,7 @@
 // Marcos
 
 // Version number displayed on home screen
-#define HEAVENS_DOOR_VERSION "0.5"
+#define HEAVENS_DOOR_VERSION "0.7"
 
 // Marco for checking if ctrl key is pressed
 #define CTRL_KEY(k) ((k) & 0x1f)

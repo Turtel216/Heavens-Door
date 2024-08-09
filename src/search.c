@@ -1,28 +1,53 @@
 #include "search.h"
 #include "global_util.h"
 #include "text_row.h"
+#include "keys_and_mouse.h"
 #include <stdlib.h>
 #include <string.h>
 
 static void search_callback(char *query, int key, struct Config *config)
 {
-	// Exit search on enter or escape
+	static int last_match = -1;
+	static int direction = 1;
+
+	// Exit search on enter or escape. Update direction on arrow press
 	if (key == '\r' || key == '\x1b') {
+		last_match = -1;
+		direction = 1;
 		return;
+	} else if (key == ARROW_RIGHT || key == ARROW_DOWN) {
+		direction = 1;
+	} else if (key == ARROW_LEFT || key == ARROW_UP) {
+		direction = -1;
+	} else {
+		last_match = -1;
+		direction = 1;
 	}
 
-	// Search for query
+	if (last_match == -1)
+		direction = 1;
+
+	int current = last_match;
 	int i;
-	for (i = 0; i < config->num_rows; i++) {
+
+	// Search for query
+	for (i = 0; i < config->num_rows; ++i) {
+		current += direction;
+
+		if (current == -1)
+			current = config->num_rows - 1;
+		else if (current == config->num_rows)
+			current = 0;
+
 		// Get row at index
-		text_row *row = &config->rows[i];
+		text_row *row = &config->rows[current];
 
 		// Search row for query
 		char *match = strstr(row->render, query);
-
-		// On match found move curser to position of match
 		if (match) {
-			config->cursor_y = i;
+			last_match = current;
+
+			config->cursor_y = current;
 			config->cursor_x =
 				render_x_to_row_x(row, match - row->render);
 			config->row_offset = config->num_rows;
