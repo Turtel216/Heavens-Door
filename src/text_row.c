@@ -68,6 +68,22 @@ int cursor_x_to_render_x(text_row *row, int cx)
 	return rx;
 }
 
+// Convert render_x to courser_x
+int render_x_to_row_x(text_row *row, int rx)
+{
+	int cur_rx = 0;
+	int cx;
+	for (cx = 0; cx < row->size; cx++) {
+		if (row->chars[cx] == '\t')
+			cur_rx += (TAB_STOP - 1) - (cur_rx % TAB_STOP);
+
+		if (++cur_rx > rx)
+			return cx;
+	}
+
+	return cx;
+}
+
 // Delete character from text row
 void row_delete_char(text_row *row, int at)
 {

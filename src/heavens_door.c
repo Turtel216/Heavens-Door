@@ -33,11 +33,9 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <stdarg.h>
-#include <time.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <termios.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <string.h>
@@ -46,29 +44,13 @@
 // Custom lib
 #include "heavens_door.h"
 #include "append_buffer.h"
-#include "text_row.h"
 #include "keys_and_mouse.h"
 #include "global_util.h"
+#include "search.h"
 //###########
 
-//TODO add 2 byte bit field for editor mode status
-// Editor internal state
-struct EditorsConfig {
-	int cursor_x, cursor_y; // cursor position
-	int render_x; // index of render string
-	int row_offset, col_offset;
-	int screen_rows, screen_cols;
-	int num_rows;
-	text_row *rows; // Array of rows
-	unsigned int dirty : 1; // Bit flag for tracking saved/unsaved data
-	char *filename; // Name of the file being displayed
-	char status_msg[80]; // Global status message displayed in stutus bar
-	time_t status_msg_time; // Time of the last status message
-	struct termios _termios; // structed uses for handling terminal
-};
-
 // Global editors state
-struct EditorsConfig config;
+struct Config config;
 
 // Function definitions
 
@@ -614,6 +596,10 @@ void process_keys(void)
 	case END_KEY: // Jump to end of line
 		if (config.cursor_y < config.num_rows)
 			config.cursor_x = config.rows[config.cursor_x].size;
+		break;
+
+	case CTRL_KEY('f'):
+		search_promt(&config);
 		break;
 
 	case BACKSPACE:

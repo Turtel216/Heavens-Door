@@ -12,7 +12,8 @@ int main(int argc, char *argv[])
 	if (argc >= 2)
 		open_editor(argv[1]); // open file
 
-	set_status_message("Press ctrl-q to quit | ctrl-s to save");
+	set_status_message(
+		"Press ctrl-q to quit | ctrl-s to save | ctrl-f to search");
 
 	// Input loop
 	while (1) {

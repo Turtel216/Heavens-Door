@@ -1,3 +1,25 @@
+#pragma once
+
+#include <termios.h>
+#include <time.h>
+#include "text_row.h"
+
+//TODO add 2 byte bit field for editor mode status
+// Editor internal state
+struct Config {
+	int cursor_x, cursor_y; // cursor position
+	int render_x; // index of render string
+	int row_offset, col_offset;
+	int screen_rows, screen_cols;
+	int num_rows;
+	text_row *rows; // Array of rows
+	unsigned int dirty : 1; // Bit flag for tracking saved/unsaved data
+	char *filename; // Name of the file being displayed
+	char status_msg[80]; // Global status message displayed in stutus bar
+	time_t status_msg_time; // Time of the last status message
+	struct termios _termios; // structed uses for handling terminal
+};
+
 // Allows editor to write in terminal
 void enable_RowMode(void);
 // Exit program with error
