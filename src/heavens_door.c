@@ -244,7 +244,7 @@ void save_to_file(void)
 {
 	// Check if file name has been specified
 	if (config.filename == NULL)
-		config.filename = promt("Save as: %s");
+		config.filename = promt("Save as: %s", NULL);
 
 	// Check if promt was successful
 	if (config.filename == NULL) {
@@ -695,7 +695,7 @@ void set_status_message(const char *fmt, ...)
 // TODO Check for NULL pointer after dynamic memory allocation in promt function
 
 // Create promt
-char *promt(char *prompt)
+char *promt(char *prompt, void (*callback)(char *, int, struct Config *))
 {
 	// Create buffer string
 	size_t bufsize = 128;
@@ -719,11 +719,19 @@ char *promt(char *prompt)
 		} else if (c == '\x1b') { // Check of escape key
 			// Cancel promt
 			set_status_message("");
+
+			if (callback)
+				callback(buf, c, &config);
+
 			free(buf);
 			return NULL;
 		} else if (c == '\r') { // enter pressed, return buf
 			if (buflen != 0) {
 				set_status_message("");
+
+				if (callback)
+					callback(buf, c, &config);
+
 				return buf;
 			}
 		} else if (!iscntrl(c) && c < 128) { // Append to buffer
@@ -735,6 +743,9 @@ char *promt(char *prompt)
 			buf[buflen++] = c;
 			buf[buflen] = '\0';
 		}
+
+		if (callback)
+			callback(buf, c, &config);
 	}
 }
 //##################################

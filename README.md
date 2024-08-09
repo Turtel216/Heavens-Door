@@ -44,6 +44,7 @@ The Current version of Heaven's Door is **0.6**. This is my plan for the feature
 
 - To jump to the beginning/end of a file press the **page-up**/**page-down** keys respectively
 
+- You can search and jump to a specifc string of characters by pressing **ctrl+f**
 ### Inserting characters
 
 - Type out the characters that you want and they will be added to the text string. This includes **spaces**
