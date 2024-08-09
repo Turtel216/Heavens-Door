@@ -7,15 +7,15 @@
 
 ## Development plan
 
-The Current version of Heaven's Door is **0.5**. This is my plan for the feature:
+The Current version of Heaven's Door is **0.6**. This is my plan for the feature:
 
-- **Version 0.6** Improve and extend current features.
+- **Version 0.6** Improve and extend current features. *(DONE)*
 
 - **Version 0.7** Add text search.
 
 - **Version 0.8** Add Syntax highliting for my esoteric programing language [Xanadu](https://github.com/Turtel216/Xanadu).
 
-- **Version 0.9** Add Vim like motions.
+- **Version 0.9** Oops. Forgot about DO/UNDO.
 
 - **Version 1.0** Code improvements and bug fixing.
 

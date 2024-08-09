@@ -706,6 +706,8 @@ void set_status_message(const char *fmt, ...)
 	config.status_msg_time = time(NULL);
 }
 
+// TODO Check for NULL pointer after dynamic memory allocation in promt function
+
 // Create promt
 char *promt(char *prompt)
 {
