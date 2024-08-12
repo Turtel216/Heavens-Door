@@ -1,4 +1,5 @@
 // Necessery for file handling
+#include "text_row.h"
 #define _DEFAULT_SOURCE
 #define _BSD_SOURCE
 #define _GNU_SOURCE
@@ -155,6 +156,7 @@ static void append_row(int at, char *s, size_t len)
 
 	config.rows[at].render_size = 0;
 	config.rows[at].render = NULL;
+	config.rows[at].hlight = NULL;
 	update_row(&config.rows[at]);
 
 	config.num_rows++;
@@ -463,10 +465,44 @@ static void draw_rows(struct abuf *ab)
 			if (len > config.screen_cols)
 				len = config.screen_cols;
 
-			buffer_append(
-				ab,
-				&config.rows[file_row].render[config.col_offset],
-				len);
+			char *c =
+				&config.rows[file_row].render[config.col_offset];
+
+			unsigned char *hl =
+				&config.rows[file_row].hlight[config.col_offset];
+
+			// Keeps track of repeating colors
+			int current_color = -1; // -1 means default color
+
+			// Map over highlight array
+			for (int j = 0; j < len; ++j) {
+				if (hl[j] == HL_NORMAL) { // Color normal next
+					if (current_color != -1) {
+						buffer_append(ab, "\x1b[39m",
+							      5);
+						current_color = -1;
+					}
+
+					buffer_append(ab, &c[j], 1);
+				} else { // Color highlighted text
+					int color = syntax_to_color(hl[j]);
+
+					// check if the colors has changed from previous iteration
+					// if yes append the buffer
+					if (color != current_color) {
+						current_color = color;
+						char buf[16];
+						int clen = snprintf(buf,
+								    sizeof(buf),
+								    "\x1b[%dm",
+								    color);
+
+						buffer_append(ab, buf, clen);
+					}
+					buffer_append(ab, &c[j], 1);
+				}
+			}
+			buffer_append(ab, "\x1b[39m", 5);
 		}
 
 		buffer_append(ab, "\x1b[K", 3);

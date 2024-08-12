@@ -1,7 +1,25 @@
 #include "text_row.h"
 #include "heavens_door.h"
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+
+// Update the syntax highlighting
+static void update_syntax(text_row *row)
+{
+	// Update highlighting array size to updated render size
+	row->hlight = realloc(row->hlight, row->render_size);
+	if (row->hlight == NULL)
+		die("Failed to reallocate memory");
+
+	// Set all characters to normal highlighting by default
+	memset(row->hlight, HL_NORMAL, row->render_size);
+
+	// Highlight all digits
+	for (int i = 0; i < row->render_size; ++i)
+		if (isdigit(row->render[i]))
+			row->hlight[i] = HL_NUMBER;
+}
 
 // Initialize rendered row
 void update_row(text_row *row)
@@ -35,6 +53,8 @@ void update_row(text_row *row)
 	// At NULL terminator at the end
 	row->render[idx] = '\0';
 	row->render_size = idx;
+
+	update_syntax(row);
 }
 
 // Insert character into row
@@ -99,9 +119,21 @@ void row_delete_char(text_row *row, int at)
 	update_row(row);
 }
 
+// Convert highlight enum to ascii characters
+int syntax_to_color(int hlight)
+{
+	switch (hlight) {
+	case HL_NUMBER:
+		return 31;
+	default:
+		return 37;
+	}
+}
+
 // Free given text_row
 void free_row(text_row *row)
 {
 	free(row->render);
 	free(row->chars);
+	free(row->hlight);
 }

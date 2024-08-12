@@ -10,7 +10,11 @@ typedef struct text_row {
 	char *chars; // string of characters of each line
 	size_t render_size; // size of rendered line
 	char *render; // actual characters drawn on screen
+	unsigned char *hlight; // array containing highlighting of each line
 } text_row;
+
+// Enum containing all highlighting values
+enum editor_highlight { HL_NORMAL = 0, HL_NUMBER };
 
 // Initialize rendered row
 void update_row(text_row *row);
@@ -22,5 +26,7 @@ int cursor_x_to_render_x(text_row *row, int cx);
 int render_x_to_row_x(text_row *row, int rx);
 // Delete character from text row
 void row_delete_char(text_row *row, int at);
+// Convert highlight enum to ascii characters
+int syntax_to_color(int hlight);
 // Free given text_row
 void free_row(text_row *row);
