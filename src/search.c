@@ -10,6 +10,16 @@ static void search_callback(char *query, int key, struct Config *config)
 	static int last_match = -1;
 	static int direction = 1;
 
+	static int saved_hl_line;
+	static char *saved_hl = NULL;
+	if (saved_hl) {
+		memcpy(config->rows[saved_hl_line].hlight, saved_hl,
+		       config->rows[saved_hl_line].render_size);
+
+		free(saved_hl);
+		saved_hl = NULL;
+	}
+
 	// Exit search on enter or escape. Update direction on arrow press
 	if (key == '\r' || key == '\x1b') {
 		last_match = -1;
@@ -51,6 +61,14 @@ static void search_callback(char *query, int key, struct Config *config)
 			config->cursor_x =
 				render_x_to_row_x(row, match - row->render);
 			config->row_offset = config->num_rows;
+
+			saved_hl_line = current;
+			saved_hl = malloc(row->render_size);
+			memcpy(saved_hl, row->hlight, row->render_size);
+
+			// Mark string to be highlighted
+			memset(&row->hlight[match - row->render],
+			       HL_SEARCH_MATCH, strlen(query));
 
 			break;
 		}

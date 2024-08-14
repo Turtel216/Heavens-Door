@@ -125,6 +125,8 @@ int syntax_to_color(int hlight)
 	switch (hlight) {
 	case HL_NUMBER:
 		return 31;
+	case HL_SEARCH_MATCH:
+		return 34;
 	default:
 		return 37;
 	}
