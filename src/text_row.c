@@ -3,6 +3,13 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+
+// Returns true of if character is seperator
+static inline bool is_separator(int c)
+{
+	return isspace(c) || c == '\0' || strchr(",.()+-/*=~%<>[];", c) != NULL;
+}
 
 // Update the syntax highlighting
 static void update_syntax(text_row *row)
@@ -15,10 +22,26 @@ static void update_syntax(text_row *row)
 	// Set all characters to normal highlighting by default
 	memset(row->hlight, HL_NORMAL, row->render_size);
 
-	// Highlight all digits
-	for (int i = 0; i < row->render_size; ++i)
-		if (isdigit(row->render[i]))
-			row->hlight[i] = HL_NUMBER;
+	// Update Highlighting
+	int prev_sep = 1;
+	int i = 0;
+	while (i < row->render_size) {
+		char c = row->render[i];
+
+		unsigned char prev_hl = (i > 0) ? row->hlight[i - 1] :
+						  HL_NORMAL;
+		if ((isdigit(c) && (prev_sep || prev_hl == HL_NUMBER)) ||
+		    (c == '.' && prev_hl == HL_NUMBER)) {
+			// highlight number
+			row->hlight[i++] = HL_NUMBER;
+
+			prev_sep = 0;
+			continue;
+		}
+
+		prev_sep = is_separator(c);
+		++i;
+	}
 }
 
 // Initialize rendered row
