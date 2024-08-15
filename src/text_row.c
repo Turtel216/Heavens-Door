@@ -16,8 +16,6 @@ static void update_syntax(text_row *row)
 {
 	// Update highlighting array size to updated render size
 	row->hlight = realloc(row->hlight, row->render_size);
-	if (row->hlight == NULL)
-		die("Failed to reallocate memory");
 
 	// Set all characters to normal highlighting by default
 	memset(row->hlight, HL_NORMAL, row->render_size);
