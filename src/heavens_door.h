@@ -17,7 +17,14 @@ struct Config {
 	char *filename; // Name of the file being displayed
 	char status_msg[80]; // Global status message displayed in stutus bar
 	time_t status_msg_time; // Time of the last status message
+	struct syntax *syntax;
 	struct termios _termios; // structed uses for handling terminal
+};
+
+struct syntax {
+	char *filetype;
+	char **filematch;
+	int flags;
 };
 
 // Allows editor to write in terminal
@@ -32,3 +39,4 @@ void refresh_screen(void);
 void init_editor(void);
 // Opens up given file
 void open_editor(char *filename);
+void update_syntax(text_row *row);

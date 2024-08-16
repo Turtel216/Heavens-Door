@@ -18,6 +18,10 @@
 // be pressed until force quite
 #define QUITE_TIMES 3
 
+//TODO
+#define HL_HIGHLIGHT_NUMBERS (1 << 0)
+#define HLDB_ENTRIES (sizeof(HLDB) / sizeof(HLDB[0]))
+
 // Marco for marking file as dirty aka unsaved data
 #define DIRTY 1
 // Marco for marking file as clean aka no unsaved data
@@ -40,6 +44,7 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <string.h>
+#include <stdbool.h>
 //#############
 
 // Custom lib
@@ -52,6 +57,12 @@
 
 // Global editors state
 struct Config config;
+
+// File types
+char *C_HL_extensions[] = { ".c", ".h", ".cpp", NULL };
+struct syntax HLDB[] = {
+	{ "c", C_HL_extensions, HL_HIGHLIGHT_NUMBERS },
+};
 
 // Function definitions
 
@@ -116,6 +127,7 @@ void init_editor(void)
 	config.dirty = CLEAN;
 	config.filename = NULL;
 	config.status_msg[0] = '\0';
+	config.syntax = NULL;
 	config.status_msg_time = 0;
 
 	// Set rows and collums according to screen size, exit on failure
@@ -314,6 +326,51 @@ static void delete_row(int at)
 	config.dirty = DIRTY;
 }
 
+// Returns true of if character is seperator
+static inline bool is_separator(int c)
+{
+	return isspace(c) || c == '\0' || strchr(",.()+-/*=~%<>[];", c) != NULL;
+}
+
+// Update the syntax highlighting
+void update_syntax(text_row *row)
+{
+	// Update highlighting array size to updated render size
+	row->hlight = realloc(row->hlight, row->render_size);
+
+	// Set all characters to normal highlighting by default
+	memset(row->hlight, HL_NORMAL, row->render_size);
+
+	// If no file type is found, return
+	if (config.syntax == NULL)
+		return;
+
+	// Update Highlighting
+	int prev_sep = 1;
+	int i = 0;
+	while (i < row->render_size) {
+		char c = row->render[i];
+
+		unsigned char prev_hl = (i > 0) ? row->hlight[i - 1] :
+						  HL_NORMAL;
+
+		if (config.syntax->flags & HL_HIGHLIGHT_NUMBERS) {
+			if ((isdigit(c) &&
+			     (prev_sep || prev_hl == HL_NUMBER)) ||
+			    (c == '.' && prev_hl == HL_NUMBER)) {
+				// highlight number
+				row->hlight[i++] = HL_NUMBER;
+
+				prev_sep = 0;
+				continue;
+			}
+		}
+
+		prev_sep = is_separator(c);
+		++i;
+	}
+}
+
 // Move to new line and add \n
 void insert_new_line()
 {
@@ -389,14 +446,16 @@ static void draw_status_bar(struct abuf *ab)
 {
 	buffer_append(ab, "\x1b[7m", 4);
 
-	char status[80], right_status[80]; // String holding status bar info
+	char status[80],
+		right_status[80]; // String holding status bar info
 
 	int len = snprintf(status, sizeof(status), "%.20s - %d lines %s",
 			   config.filename ? config.filename : "[No Name]",
 			   config.num_rows,
 			   config.dirty == DIRTY ? "(modified)" : "");
 
-	int rlen = snprintf(right_status, sizeof(right_status), "%d/%d",
+	int rlen = snprintf(right_status, sizeof(right_status), "%s | %d/%d",
+			    config.syntax ? config.syntax->filetype : "no ft",
 			    config.cursor_y + 1, config.num_rows);
 
 	if (len > config.screen_cols)
