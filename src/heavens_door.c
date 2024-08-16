@@ -97,6 +97,31 @@ void enable_RowMode(void)
 	tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
 
+// Match file types with given file type
+static void select_syntax_highlight()
+{
+	config.syntax = NULL;
+	if (config.filename == NULL)
+		return;
+
+	char *ext = strrchr(config.filename, '.');
+	for (unsigned int j = 0; j < HLDB_ENTRIES; j++) {
+		struct syntax *s = &HLDB[j];
+
+		unsigned int i = 0;
+		while (s->filematch[i]) {
+			int is_ext = (s->filematch[i][0] == '.');
+			if ((is_ext && ext && !strcmp(ext, s->filematch[i])) ||
+			    (!is_ext &&
+			     strstr(config.filename, s->filematch[i]))) {
+				config.syntax = s;
+				return;
+			}
+			++i;
+		}
+	}
+}
+
 // Get the users window size
 static int get_window_size(int *rows, int *cols)
 {
@@ -231,6 +256,8 @@ void open_editor(char *filename)
 	free(config.filename);
 	config.filename = strdup(filename);
 
+	select_syntax_highlight();
+
 	FILE *fp = fopen(filename, "r");
 
 	if (!fp)
@@ -257,14 +284,17 @@ void open_editor(char *filename)
 void save_to_file(void)
 {
 	// Check if file name has been specified
-	if (config.filename == NULL)
+	if (config.filename == NULL) {
 		config.filename = promt("Save as: %s", NULL);
 
-	// Check if promt was successful
-	if (config.filename == NULL) {
-		set_status_message("Save aborted");
-		return;
+		// Check if promt was successful
+		if (config.filename == NULL) {
+			set_status_message("Save aborted");
+			return;
+		}
 	}
+
+	select_syntax_highlight();
 
 	int len;
 	// Get output string
