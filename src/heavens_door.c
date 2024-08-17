@@ -63,7 +63,8 @@ struct Config config;
 // File types
 char *C_HL_extensions[] = { ".c", ".h", ".cpp", NULL };
 struct syntax HLDB[] = {
-	{ "c", C_HL_extensions, HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS },
+	{ "c", C_HL_extensions, "//",
+	  HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS },
 };
 
 // Function definitions
@@ -385,6 +386,10 @@ void update_syntax(text_row *row)
 	if (config.syntax == NULL)
 		return;
 
+	// Single line comment info
+	char *scs = config.syntax->singleline_comment_start;
+	int scs_len = scs ? strlen(scs) : 0;
+
 	// Update Highlighting
 	int prev_sep = 1;
 	int in_string = 0;
@@ -395,6 +400,15 @@ void update_syntax(text_row *row)
 
 		unsigned char prev_hl = (i > 0) ? row->hlight[i - 1] :
 						  HL_NORMAL;
+
+		if (scs_len && !in_string) {
+			if (!strncmp(&row->render[i], scs, scs_len)) {
+				memset(&row->hlight[i], HL_COMMENT,
+				       row->render_size - i);
+
+				break;
+			}
+		}
 
 		if (config.syntax->flags & HL_HIGHLIGHT_STRINGS) {
 			if (in_string) {

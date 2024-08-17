@@ -14,7 +14,13 @@ typedef struct text_row {
 } text_row;
 
 // Enum containing all highlighting values
-enum editor_highlight { HL_NORMAL = 0, HL_STRING, HL_NUMBER, HL_SEARCH_MATCH };
+enum editor_highlight {
+	HL_NORMAL = 0,
+	HL_COMMENT,
+	HL_STRING,
+	HL_NUMBER,
+	HL_SEARCH_MATCH
+};
 
 // Initialize rendered row
 void update_row(text_row *row);
