@@ -106,6 +106,8 @@ void row_delete_char(text_row *row, int at)
 int syntax_to_color(int hlight)
 {
 	switch (hlight) {
+	case HL_STRING:
+		return 35;
 	case HL_NUMBER:
 		return 31;
 	case HL_SEARCH_MATCH:
