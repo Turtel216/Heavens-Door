@@ -1,5 +1,4 @@
 // Necessery for file handling
-#include "text_row.h"
 #define _DEFAULT_SOURCE
 #define _BSD_SOURCE
 #define _GNU_SOURCE
@@ -53,6 +52,7 @@
 #include "keys_and_mouse.h"
 #include "global_util.h"
 #include "search.h"
+#include "text_row.h"
 //###########
 
 // Global editors state
@@ -115,6 +115,14 @@ static void select_syntax_highlight()
 			    (!is_ext &&
 			     strstr(config.filename, s->filematch[i]))) {
 				config.syntax = s;
+
+				// Rehighlight syntax before returning
+				int filerow;
+				for (filerow = 0; filerow < config.num_rows;
+				     ++filerow) {
+					update_syntax(&config.rows[filerow]);
+				}
+
 				return;
 			}
 			++i;

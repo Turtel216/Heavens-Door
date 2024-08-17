@@ -53,6 +53,7 @@ dkms.conf
 
 # CMake
 /build/
+/debug/
 
 # Temp file used for experimenting
 tmp.c
