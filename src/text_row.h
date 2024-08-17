@@ -17,6 +17,8 @@ typedef struct text_row {
 enum editor_highlight {
 	HL_NORMAL = 0,
 	HL_COMMENT,
+	HL_KEYWORD1,
+	HL_KEYWORD2,
 	HL_STRING,
 	HL_NUMBER,
 	HL_SEARCH_MATCH

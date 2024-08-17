@@ -108,6 +108,10 @@ int syntax_to_color(int hlight)
 	switch (hlight) {
 	case HL_COMMENT:
 		return 36;
+	case HL_KEYWORD1:
+		return 33;
+	case HL_KEYWORD2:
+		return 32;
 	case HL_STRING:
 		return 35;
 	case HL_NUMBER:

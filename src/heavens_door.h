@@ -25,6 +25,7 @@ struct syntax {
 	char *filetype;
 	char **filematch;
 	char *singleline_comment_start;
+	char **keywords;
 	int flags;
 };
 
