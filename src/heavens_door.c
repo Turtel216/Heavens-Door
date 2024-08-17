@@ -69,10 +69,31 @@ char *C_HL_keywords[] = { "switch",    "if",	  "while",   "for",    "break",
 			  "int|",      "long|",	  "double|", "float|", "char|",
 			  "unsigned|", "signed|", "void|",   NULL };
 
-struct syntax HLDB[] = {
-	{ "c", C_HL_extensions, "//", C_HL_keywords,
-	  HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS },
-};
+// Xanadu highlight informatio
+char *XANADU_HL_extensions[] = { ".xa", NULL };
+char *XANADU_HL_keywords[] = { "switch",
+			       "Freewill",
+			       "Workingmans_grind",
+			       "circumstances",
+			       "break",
+			       "continue",
+			       "limelight",
+			       "Choose_not_to_decide",
+			       "struct",
+			       "union",
+			       "static",
+			       "overtune",
+			       "case",
+			       "yyz|",
+			       "subdivision|",
+			       "Cygnus",
+			       NULL };
+
+struct syntax HLDB[] = { { "c", C_HL_extensions, "//", C_HL_keywords,
+			   HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS },
+			 { "xanadu", XANADU_HL_extensions, "//",
+			   XANADU_HL_keywords,
+			   HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS } };
 
 // Function definitions
 
