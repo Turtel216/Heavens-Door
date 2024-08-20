@@ -1,19 +1,27 @@
 # Heaven's Door
 
-### A simple terminal based text editor written in the C programming language
+### A simple terminal based code editor written in the C programming language
 
 > [!NOTE]
 > The editor is usable but still under development.
 
+## Supported languages
+
+The editor provides syntax highliting for:
+
+- Xanadu 
+
+- C/C++
+
 ## Development plan
 
-The Current version of Heaven's Door is **0.7**. This is my plan for the feature:
+The Current version of Heaven's Door is **0.8**. This is my plan for the feature:
 
 - **Version 0.6** Improve and extend current features. *(DONE)*
 
 - **Version 0.7** Add text search. *(DONE)*
 
-- **Version 0.8** Add Syntax highliting for my esoteric programing language [Xanadu](https://github.com/Turtel216/Xanadu).
+- **Version 0.8** Add Syntax highliting for my esoteric programing language [Xanadu](https://github.com/Turtel216/Xanadu). *(DONE)*
 
 - **Version 0.9** Oops. Forgot about DO/UNDO.
 

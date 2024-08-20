@@ -7,7 +7,7 @@
 // Marcos
 
 // Version number displayed on home screen
-#define HEAVENS_DOOR_VERSION "0.7"
+#define HEAVENS_DOOR_VERSION "0.8"
 
 // Marco for checking if ctrl key is pressed
 #define CTRL_KEY(k) ((k) & 0x1f)
@@ -71,22 +71,17 @@ char *C_HL_keywords[] = { "switch",    "if",	  "while",   "for",    "break",
 
 // Xanadu highlight informatio
 char *XANADU_HL_extensions[] = { ".xa", NULL };
-char *XANADU_HL_keywords[] = { "switch",
-			       "Freewill",
+char *XANADU_HL_keywords[] = { "Freewill",
 			       "Workingmans_grind",
 			       "circumstances",
 			       "break",
 			       "continue",
 			       "limelight",
 			       "Choose_not_to_decide",
-			       "struct",
-			       "union",
-			       "static",
 			       "overtune",
-			       "case",
 			       "yyz|",
 			       "subdivision|",
-			       "Cygnus",
+			       "cygnus",
 			       NULL };
 
 struct syntax HLDB[] = { { "c", C_HL_extensions, "//", C_HL_keywords,
