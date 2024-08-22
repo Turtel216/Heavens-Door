@@ -71,17 +71,20 @@ char *C_HL_keywords[] = { "switch",    "if",	  "while",   "for",    "break",
 
 // Xanadu highlight informatio
 char *XANADU_HL_extensions[] = { ".xa", NULL };
-char *XANADU_HL_keywords[] = { "Freewill",
-			       "Workingmans_grind",
+char *XANADU_HL_keywords[] = { "freewill",
+			       "workingmans_grind",
 			       "circumstances",
 			       "break",
 			       "continue",
 			       "limelight",
-			       "Choose_not_to_decide",
+			       "counterpoint",
 			       "overtune",
 			       "yyz|",
 			       "subdivision|",
 			       "cygnus",
+			       "blabla",
+			       "and|",
+			       "or|",
 			       NULL };
 
 struct syntax HLDB[] = { { "c", C_HL_extensions, "//", C_HL_keywords,
