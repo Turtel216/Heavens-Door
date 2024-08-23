@@ -29,9 +29,6 @@ The Current version of Heaven's Door is **0.8**. This is my plan for the feature
 
 ## Hot keys so far
 
-> [!NOTE]
-> These will change most certainly as vim like motions are added
-
 ### Opening a file and closing files
 
 - To open a file add the file path after the executable. For example, after build the executable in ./build you open the test0.txt file in the ./test-files directory like so:

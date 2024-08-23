@@ -2,7 +2,7 @@
 #include <stddef.h>
 
 // Tab size
-#define TAB_STOP 8
+#define TAB_STOP 3
 
 // Holds meta data for each line of text
 typedef struct text_row {
