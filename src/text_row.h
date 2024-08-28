@@ -13,7 +13,9 @@
  * GNU General Public License for more details.
  */
 
-#pragma once
+#ifndef HEAVEN_TEXT_ROW_H
+#define HEAVEN_TEXT_ROW_H
+
 #include <stddef.h>
 
 // Tab size
@@ -53,3 +55,5 @@ void row_delete_char(text_row *row, int at);
 int syntax_to_color(int hlight);
 // Free given text_row
 void free_row(text_row *row);
+
+#endif // !HEAVEN_TEXT_ROW_H

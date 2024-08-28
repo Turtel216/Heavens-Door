@@ -13,7 +13,8 @@
  * GNU General Public License for more details.
  */
 
-#pragma once
+#ifndef HEAVEN_GLOBAL_UTIL_H
+#define HEAVEN_GLOBAL_UTIL_H
 
 // Exit program with error
 void die(const char *s);
@@ -21,3 +22,5 @@ void die(const char *s);
 void set_status_message(const char *fmt, ...);
 // Create promt
 char *promt(char *prompt, void (*callback)(char *, int, struct Config *));
+
+#endif // !HEAVEN_GLOBAL_UTIL_H

@@ -13,7 +13,8 @@
  * GNU General Public License for more details.
  */
 
-#pragma once
+#ifndef HEAVEN_KEYS_AND_MOUSE_H
+#define HEAVEN_KEYS_AND_MOUSE_H
 
 // Key values
 enum keys {
@@ -33,3 +34,5 @@ enum keys {
 int read_keys(void);
 // Get current position of cursor on the screen
 int get_cursor_position(int *rows, int *cols);
+
+#endif // !HEAVEN_KEYS_AND_MOUSE_H

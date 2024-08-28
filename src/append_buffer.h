@@ -13,7 +13,8 @@
  * GNU General Public License for more details.
  */
 
-#pragma once
+#ifndef HEAVEN_APPEND_BUFFER_H
+#define HEAVEN_APPEND_BUFFER_H
 
 // Struct holding output buffer
 struct abuf {
@@ -27,3 +28,5 @@ struct abuf {
 void buffer_append(struct abuf *ab, const char *s, int len);
 // Free output buffer
 void ab_free(struct abuf *ab);
+
+#endif // HEAVEN_APPEND_BUFFER_H

@@ -13,7 +13,8 @@
  * GNU General Public License for more details.
  */
 
-#pragma once
+#ifndef HEAVEN_HEAVENS_DOOR_H
+#define HEAVEN_HEAVENS_DOOR_H
 
 #include <termios.h>
 #include <time.h>
@@ -57,3 +58,5 @@ void init_editor(void);
 // Opens up given file
 void open_editor(char *filename);
 void update_syntax(text_row *row);
+
+#endif // !HEAVEN_HEAVENS_DOOR_H

@@ -13,8 +13,11 @@
  * GNU General Public License for more details.
  */
 
-#pragma once
+#ifndef HEAVEN_SEARCH_H
+#define HEAVEN_SEARCH_H
 
 #include "heavens_door.h"
 
 void search_promt(struct Config *config);
+
+#endif // !HEAVEN_SEARCH_H
