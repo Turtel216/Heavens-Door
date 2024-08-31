@@ -9,9 +9,11 @@
 
 The editor provides syntax highliting for:
 
-- Xanadu 
-
 - C/C++
+
+- [Xanadu](https://github.com/Turtel216/Xanadu)
+
+- [Vera](https://github.com/Turtel216/Vera)
 
 ## Development plan
 

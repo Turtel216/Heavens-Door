@@ -102,10 +102,20 @@ char *XANADU_HL_keywords[] = { "freewill",
 			       "or|",
 			       NULL };
 
+// Xanadu highlight informatio
+char *VERA_HL_extensions[] = { ".pf", NULL };
+char *VERA_HL_keywords[] = { "if",	  "echoes",   "time", "break|",
+			     "continue|", "eclipse|", "else", "overtune",
+			     "pink|",	  "wish",     "nil|", "shine",
+			     "and|",	  "or|",      NULL };
+
+// Syntax highlighting info
 struct syntax HLDB[] = { { "c", C_HL_extensions, "//", C_HL_keywords,
 			   HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS },
 			 { "Xanadu", XANADU_HL_extensions, "//",
 			   XANADU_HL_keywords,
+			   HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS },
+			 { "Vera", VERA_HL_extensions, "//", VERA_HL_keywords,
 			   HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS } };
 
 // Function definitions
