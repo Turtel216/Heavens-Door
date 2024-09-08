@@ -86,14 +86,12 @@ char *C_HL_keywords[] = { "switch",    "if",	  "while",   "for",    "break",
 
 // Xanadu highlight informatio
 char *XANADU_HL_extensions[] = { ".xa", NULL };
-char *XANADU_HL_keywords[] = { "freewill",	"workingmans_grind",
-			       "circumstances", "break|",
-			       "continue|",	"limelight|",
-			       "counterpoint",	"overtune",
-			       "yyz|",		"subdivision",
-			       "cygnus|",	"blabla",
-			       "and|",		"or|",
-			       "todays|",	NULL };
+char *XANADU_HL_keywords[] = {
+	"freewill",    "workingmans_grind", "circumstances", "continue|",
+	"limelight|",  "counterpoint",	    "overtune",	     "yyz|",
+	"subdivision", "cygnus|",	    "blabla",	     "and|",
+	"or|",	       "|syrinx",	    "todays|",	     NULL
+};
 
 // Xanadu highlight informatio
 char *VERA_HL_extensions[] = { ".pf", NULL };
