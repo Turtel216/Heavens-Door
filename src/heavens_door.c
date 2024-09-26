@@ -93,11 +93,11 @@ char *XANADU_HL_keywords[] = {
 	"or|",	       "|syrinx",	    "todays|",	     NULL
 };
 
-// Xanadu highlight informatio
-char *VERA_HL_extensions[] = { ".pf", NULL };
-char *VERA_HL_keywords[] = { "if",	  "echoes",   "time", "break|",
-			     "continue|", "eclipse|", "else", "overtune",
-			     "pink|",	  "wish",     "nil|", "shine",
+// Vera highlight informatio
+char *VERA_HL_extensions[] = { ".ve", NULL };
+char *VERA_HL_keywords[] = { "outThere",  "echoes",   "time",	 "break|",
+			     "continue|", "eclipse|", "anybody", "overtune",
+			     "pink|",	  "wish",     "nil|",	 "shine",
 			     "and|",	  "or|",      NULL };
 
 // Syntax highlighting info
